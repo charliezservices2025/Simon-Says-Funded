@@ -24,6 +24,19 @@
     });
   }
 
+  // Submenu (Service Areas) toggle: drives the dropdown on touch/mobile and
+  // keyboard. Desktop also opens it on hover/focus via CSS.
+  document.querySelectorAll(".submenu-toggle").forEach(function (toggle) {
+    var menu = document.getElementById(toggle.getAttribute("aria-controls"));
+    if (!menu) return;
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      var isOpen = menu.getAttribute("data-open") === "true";
+      menu.setAttribute("data-open", String(!isOpen));
+      toggle.setAttribute("aria-expanded", String(!isOpen));
+    });
+  });
+
   // FAQ accordions
   document.querySelectorAll(".faq-item").forEach(function (item) {
     var btn = item.querySelector(".faq-q");

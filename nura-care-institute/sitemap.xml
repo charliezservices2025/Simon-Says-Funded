@@ -11,6 +11,14 @@
   <url><loc>https://nuracareinstitute.com/about/</loc><priority>0.7</priority></url>
   <url><loc>https://nuracareinstitute.com/faq/</loc><priority>0.7</priority></url>
   <url><loc>https://nuracareinstitute.com/enroll/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/sacramento/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/roseville/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/auburn/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/grass-valley/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/yuba-city/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/napa/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/service-areas/redding/</loc><priority>0.8</priority></url>
   <url><loc>https://nuracareinstitute.com/privacy-policy/</loc><priority>0.3</priority></url>
   <url><loc>https://nuracareinstitute.com/terms-of-service/</loc><priority>0.3</priority></url>
 </urlset>

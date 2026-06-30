@@ -19,11 +19,29 @@
     <a class="brand" href="/">
       <img src="/assets/logo.webp" alt="Nura Care Institute. Learn. Care. Empower." width="1497" height="286">
     </a>
-    <ul class="nav-links" id="primaryNav" style="display:flex;position:static;transform:none;box-shadow:none;">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primaryNav" id="navToggle" aria-label="Open menu">
+      <span></span>
+    </button>
+    <ul class="nav-links" id="primaryNav">
       <li><a href="/">Home</a></li>
       <li><a href="/courses/">Courses</a></li>
+      <li class="has-submenu">
+        <a href="/service-areas/">Service Areas</a>
+        <button class="submenu-toggle" type="button" aria-expanded="false" aria-controls="submenu-areas" aria-label="Toggle service areas menu"></button>
+        <ul class="submenu" id="submenu-areas">
+          <li><a href="/service-areas/">All Service Areas</a></li>
+          <li><a href="/service-areas/sacramento/">Sacramento</a></li>
+          <li><a href="/service-areas/roseville/">Roseville</a></li>
+          <li><a href="/service-areas/auburn/">Auburn</a></li>
+          <li><a href="/service-areas/grass-valley/">Grass Valley</a></li>
+          <li><a href="/service-areas/yuba-city/">Yuba City</a></li>
+          <li><a href="/service-areas/napa/">Napa</a></li>
+          <li><a href="/service-areas/redding/">Redding</a></li>
+        </ul>
+      </li>
       <li><a href="/about/">About</a></li>
       <li><a href="/faq/">FAQ</a></li>
+      <li><a href="/enroll/" class="nav-cta">Enroll Now</a></li>
     </ul>
   </nav>
 </header>
@@ -44,6 +62,56 @@
 
 <footer class="site-footer">
   <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="/" style="color:#fff;">
+          <img src="/assets/icon-mark.png" alt="" width="322" height="286">
+          <span class="brand-text" style="color:#fff;">Nura Care Institute<span>Learn. Care. Empower.</span></span>
+        </a>
+        <p>Healthcare certification training in Orangevale, California, with mobile CPR and BLS classes across Northern California.</p>
+      </div>
+      <div>
+        <h4>Programs</h4>
+        <ul>
+          <li><a href="/courses/certified-nursing-assistant/">Certified Nursing Assistant</a></li>
+          <li><a href="/courses/home-health-aide/">Home Health Aide</a></li>
+          <li><a href="/courses/bls-cpr-certification/">AHA BLS Certification</a></li>
+          <li><a href="/courses/acls-certification/">AHA ACLS Certification</a></li>
+          <li><a href="/courses/restorative-nursing-assistant/">Restorative Nursing Assistant</a></li>
+          <li><a href="/courses/cna-inservice-hours/">CNA Continuing Education</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Service Areas</h4>
+        <ul>
+          <li><a href="/service-areas/sacramento/">Sacramento</a></li>
+          <li><a href="/service-areas/roseville/">Roseville</a></li>
+          <li><a href="/service-areas/auburn/">Auburn</a></li>
+          <li><a href="/service-areas/grass-valley/">Grass Valley</a></li>
+          <li><a href="/service-areas/yuba-city/">Yuba City</a></li>
+          <li><a href="/service-areas/napa/">Napa</a></li>
+          <li><a href="/service-areas/redding/">Redding</a></li>
+          <li><a href="/service-areas/">All service areas</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Institute</h4>
+        <ul>
+          <li><a href="/about/">About Us</a></li>
+          <li><a href="/faq/">FAQ</a></li>
+          <li><a href="/enroll/">Enroll Now</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li>9198 Greenback Lane, Suite 108<br>Orangevale, CA 95662</li>
+          <li><a href="tel:+19165441256">(916) 544-1256</a></li>
+          <li><a href="mailto:education@nuracareinstitute.com">education@nuracareinstitute.com</a></li>
+          <li>Mon&ndash;Fri, 8:30am&ndash;5:00pm PST</li>
+        </ul>
+      </div>
+    </div>
     <div class="footer-bottom">
       <span>&copy; <span id="year"></span> Nura Care Institute. All rights reserved. &middot; <a href="/privacy-policy/">Privacy Policy</a> &middot; <a href="/terms-of-service/">Terms of Service</a></span>
       <span>9198 Greenback Lane, Suite 108, Orangevale, CA 95662</span>
