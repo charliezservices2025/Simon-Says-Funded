@@ -790,6 +790,14 @@ img {
   color: #82888f;
 }
 
+.footer-bottom a {
+  color: #aab4c7;
+}
+
+.footer-bottom a:hover {
+  color: var(--ember);
+}
+
 /* Page hero (interior pages) */
 .page-hero {
   background: var(--chart);

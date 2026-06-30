@@ -11,4 +11,6 @@
   <url><loc>https://nuracareinstitute.com/about/</loc><priority>0.7</priority></url>
   <url><loc>https://nuracareinstitute.com/faq/</loc><priority>0.7</priority></url>
   <url><loc>https://nuracareinstitute.com/enroll/</loc><priority>0.8</priority></url>
+  <url><loc>https://nuracareinstitute.com/privacy-policy/</loc><priority>0.3</priority></url>
+  <url><loc>https://nuracareinstitute.com/terms-of-service/</loc><priority>0.3</priority></url>
 </urlset>
