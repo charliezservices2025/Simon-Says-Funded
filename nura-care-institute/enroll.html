@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enroll Now | Nura Care Institute, Orangevale, CA</title>
+<meta name="description" content="Request enrollment in a CNA, HHA, BLS, ACLS, RNA, or CNA in-service course at Nura Care Institute in Orangevale, CA. Submit the form or call (916) 544-1256.">
+<link rel="canonical" href="https://nuracareinstitute.com/enroll.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Enroll Now | Nura Care Institute">
+<meta property="og:description" content="Request enrollment in a CNA, HHA, BLS, ACLS, RNA, or CNA in-service course at Nura Care Institute in Orangevale, CA.">
+<meta property="og:url" content="https://nuracareinstitute.com/enroll.html">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700;900&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="topbar">
+  <div class="container">
+    <span><strong>Enrolling now</strong> &middot; Orangevale, CA &middot; new cohorts forming regularly</span>
+    <a href="tel:+19165441256">(916) 544-1256</a>
+  </div>
+</div>
+
+<header class="site-header">
+  <nav class="nav container" aria-label="Primary">
+    <a class="brand" href="/">
+      <img src="/assets/mark.svg" alt="" width="40" height="40">
+      <span class="brand-text">Nura Care Institute<span>Learn. Care. Empower.</span></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primaryNav" id="navToggle">
+      <span></span>
+    </button>
+    <ul class="nav-links" id="primaryNav">
+      <li><a href="/">Home</a></li>
+      <li><a href="/courses.html">Courses</a></li>
+      <li><a href="/about.html">About</a></li>
+      <li><a href="/faq.html">FAQ</a></li>
+      <li><a href="/enroll.html" class="nav-cta" aria-current="page">Enroll Now</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumbs"><a href="/">Home</a> / Enroll Now</p>
+      <span class="eyebrow">Start your enrollment</span>
+      <h1>Enroll at Nura Care Institute</h1>
+      <p class="hero-lede">Tell us which program you are interested in and our admissions team will follow up within one business day with class schedule and start date.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container course-layout">
+      <div class="form-card">
+        <form id="enrollForm" action="/php/enroll.php" method="POST" novalidate>
+          <div class="form-row honeypot-field" aria-hidden="true">
+            <label for="website">Leave blank</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-row">
+              <label for="name">Full name</label>
+              <input type="text" id="name" name="name" autocomplete="name" required>
+            </div>
+            <div class="form-row">
+              <label for="phone">Phone number</label>
+              <input type="tel" id="phone" name="phone" autocomplete="tel" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" autocomplete="email" required>
+          </div>
+
+          <div class="form-row">
+            <label for="course">Program of interest</label>
+            <select id="course" name="course" required>
+              <option value="" disabled selected>Select a program</option>
+              <option value="Certified Nursing Assistant (CNA-100, $1,200)">Certified Nursing Assistant ($1,200)</option>
+              <option value="Home Health Aide (HHA-100, $575)">Home Health Aide ($575)</option>
+              <option value="AHA Basic Life Support (BLS-CPR, $82)">AHA Basic Life Support, BLS ($82)</option>
+              <option value="AHA Advanced Cardiovascular Life Support (ACLS-100, $210)">AHA Advanced Cardiovascular Life Support, ACLS ($210)</option>
+              <option value="Restorative Nursing Assistant (RNA-100, $250)">Restorative Nursing Assistant, RNA ($250)</option>
+              <option value="CNA In-Service Hours (INSV-12, $300, 12 hours)">CNA In-Service Hours, 12-hour ($300)</option>
+              <option value="Not sure yet">Not sure yet, I want to talk it through</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label for="preferred_start">Preferred start date <span class="hint">(optional)</span></label>
+            <input type="date" id="preferred_start" name="preferred_start">
+          </div>
+
+          <div class="form-row">
+            <label for="message">Anything we should know? <span class="hint">(optional)</span></label>
+            <textarea id="message" name="message" rows="4" placeholder="Questions about schedule, prerequisites, or payment plans"></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-block" type="submit">Submit Enrollment Request</button>
+          <p class="form-note">We will never share your information. Submitting this form does not charge any fee or reserve a seat; our admissions team will follow up to confirm details and payment.</p>
+          <div id="enrollStatus" class="form-status" role="status"></div>
+        </form>
+      </div>
+
+      <aside class="fact-card" aria-label="Contact information">
+        <h3 class="mt-0">Prefer to talk first?</h3>
+        <dl>
+          <dt>Call</dt>
+          <dd><a href="tel:+19165441256">(916) 544-1256</a></dd>
+          <dt>Email</dt>
+          <dd><a href="mailto:education@nuracareinstitute.com">education@nuracareinstitute.com</a></dd>
+          <dt>Visit</dt>
+          <dd>9198 Greenback Lane, Suite 108<br>Orangevale, CA 95662</dd>
+          <dt>Hours</dt>
+          <dd>Monday&ndash;Friday, 8:30am&ndash;5:00pm PST</dd>
+        </dl>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="/" style="color:#fff;">
+          <img src="/assets/mark.svg" alt="" width="36" height="36">
+          <span class="brand-text" style="color:#fff;">Nura Care Institute<span>Learn. Care. Empower.</span></span>
+        </a>
+        <p>Healthcare certification training in Orangevale, California.</p>
+      </div>
+      <div>
+        <h4>Programs</h4>
+        <ul>
+          <li><a href="/courses/certified-nursing-assistant.html">Certified Nursing Assistant</a></li>
+          <li><a href="/courses/home-health-aide.html">Home Health Aide</a></li>
+          <li><a href="/courses/bls-cpr-certification.html">AHA BLS Certification</a></li>
+          <li><a href="/courses/acls-certification.html">AHA ACLS Certification</a></li>
+          <li><a href="/courses/restorative-nursing-assistant.html">Restorative Nursing Assistant</a></li>
+          <li><a href="/courses/cna-inservice-hours.html">CNA In-Service Hours</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Institute</h4>
+        <ul>
+          <li><a href="/about.html">About Us</a></li>
+          <li><a href="/faq.html">FAQ</a></li>
+          <li><a href="/enroll.html">Enroll Now</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li>9198 Greenback Lane, Suite 108<br>Orangevale, CA 95662</li>
+          <li><a href="tel:+19165441256">(916) 544-1256</a></li>
+          <li><a href="mailto:education@nuracareinstitute.com">education@nuracareinstitute.com</a></li>
+          <li>Mon&ndash;Fri, 8:30am&ndash;5:00pm PST</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span id="year"></span> Nura Care Institute. All rights reserved.</span>
+      <span>9198 Greenback Lane, Suite 108, Orangevale, CA 95662</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/main.js"></script>
+</body>
+</html>
