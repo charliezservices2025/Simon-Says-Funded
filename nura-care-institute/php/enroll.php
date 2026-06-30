@@ -24,7 +24,7 @@ function respond(bool $ok, string $message, int $status = 200): void
         exit;
     }
 
-    $target = $ok ? '/thank-you.html' : '/enroll.html?error=1';
+    $target = $ok ? '/thank-you/' : '/enroll/?error=1';
     header('Location: ' . $target, true, 303);
     exit;
 }

@@ -87,7 +87,7 @@
             statusEl.setAttribute("data-state", "success");
             statusEl.textContent =
               "Thanks! Your enrollment request has been sent. We will contact you within one business day.";
-            window.location.href = "/thank-you.html";
+            window.location.href = "/thank-you/";
           } else {
             statusEl.setAttribute("data-state", "error");
             statusEl.textContent =

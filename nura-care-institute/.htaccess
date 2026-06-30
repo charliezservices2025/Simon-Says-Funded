@@ -8,6 +8,20 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 RewriteCond %{HTTP_HOST} ^www\.nuracareinstitute\.com$ [NC]
 RewriteRule ^(.*)$ https://nuracareinstitute.com/$1 [L,R=301]
 
+# Old .html URLs redirect permanently to the current clean paths
+RewriteRule ^index\.html$ / [R=301,L]
+RewriteRule ^about\.html$ /about/ [R=301,L]
+RewriteRule ^faq\.html$ /faq/ [R=301,L]
+RewriteRule ^enroll\.html$ /enroll/ [R=301,L]
+RewriteRule ^thank-you\.html$ /thank-you/ [R=301,L]
+RewriteRule ^courses\.html$ /courses/ [R=301,L]
+RewriteRule ^courses/certified-nursing-assistant\.html$ /courses/certified-nursing-assistant/ [R=301,L]
+RewriteRule ^courses/home-health-aide\.html$ /courses/home-health-aide/ [R=301,L]
+RewriteRule ^courses/bls-cpr-certification\.html$ /courses/bls-cpr-certification/ [R=301,L]
+RewriteRule ^courses/acls-certification\.html$ /courses/acls-certification/ [R=301,L]
+RewriteRule ^courses/restorative-nursing-assistant\.html$ /courses/restorative-nursing-assistant/ [R=301,L]
+RewriteRule ^courses/cna-inservice-hours\.html$ /courses/cna-inservice-hours/ [R=301,L]
+
 ErrorDocument 404 /404.html
 
 <IfModule mod_headers.c>
