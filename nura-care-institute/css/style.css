@@ -284,22 +284,37 @@ img {
 
 .nav-toggle {
   display: none;
-  background: none;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  background: var(--chart);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  padding: 8px 10px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-toggle:hover {
+  background: var(--sky-pale);
+  border-color: var(--slate);
 }
 
 .nav-toggle span,
 .nav-toggle span::before,
 .nav-toggle span::after {
   display: block;
-  width: 20px;
+  width: 22px;
   height: 2px;
+  border-radius: 2px;
   background: var(--ink);
+  transition: transform 0.22s ease, top 0.22s ease, background-color 0.15s ease;
+}
+
+.nav-toggle span {
   position: relative;
-  transition: transform 0.2s ease;
 }
 
 .nav-toggle span::before,
@@ -310,11 +325,26 @@ img {
 }
 
 .nav-toggle span::before {
-  top: -6px;
+  top: -7px;
 }
 
 .nav-toggle span::after {
-  top: 6px;
+  top: 7px;
+}
+
+/* Animate to an X when the menu is open */
+.nav-toggle[aria-expanded="true"] span {
+  background: transparent;
+}
+
+.nav-toggle[aria-expanded="true"] span::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] span::after {
+  top: 0;
+  transform: rotate(-45deg);
 }
 
 /* Buttons */
@@ -1367,7 +1397,7 @@ img {
 /* Tablet portrait and below: hamburger nav drawer */
 @media (max-width: 900px) {
   .nav-toggle {
-    display: block;
+    display: inline-flex;
   }
   .nav-links {
     position: fixed;
