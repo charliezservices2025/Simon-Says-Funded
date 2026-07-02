@@ -882,6 +882,36 @@ img {
   font-size: 0.92rem;
 }
 
+.footer-social {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid #4a4f57;
+  color: #fff;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-social a:hover,
+.footer-social a:focus-visible {
+  background: var(--ember);
+  border-color: var(--ember);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.footer-social svg {
+  display: block;
+}
+
 .footer-bottom {
   border-top: 1px solid #34383f;
   margin-top: 44px;
