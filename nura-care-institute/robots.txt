@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /thank-you/
+Disallow: /admin/
+Disallow: /php/
+Disallow: /data/
 
 Sitemap: https://nuracareinstitute.com/sitemap.xml
