@@ -186,3 +186,28 @@
     });
   }
 })();
+
+/* -----------------------------------------------------------------
+   First-party page view beacon. Cookie-free and anonymous: sends only
+   the page path and a device size class (mobile / tablet / desktop)
+   to our own server for the admin traffic dashboard. No third parties,
+   no identifiers, nothing personal.
+   ----------------------------------------------------------------- */
+(function () {
+  if (navigator.webdriver) return;
+  var w = window.innerWidth || document.documentElement.clientWidth || 1280;
+  var device = w <= 767 ? "m" : w <= 1024 ? "t" : "d";
+  var payload = JSON.stringify({ p: location.pathname, d: device });
+  try {
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon("/php/track.php", new Blob([payload], { type: "application/json" }));
+    } else {
+      fetch("/php/track.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        keepalive: true
+      });
+    }
+  } catch (e) { /* analytics must never break the page */ }
+})();

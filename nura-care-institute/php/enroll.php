@@ -14,8 +14,8 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/antispam.php';
+require __DIR__ . '/store.php';
 
-const RECIPIENT_EMAIL = 'education@nuracareinstitute.com';
 const SITE_NAME = 'Nura Care Institute';
 
 // Progressive enhancement: browsers without JS post here directly and expect
@@ -134,29 +134,65 @@ if ($errors) {
     respond(false, 'Please provide ' . implode(', ', $errors) . '.', 422);
 }
 
+// Persist the lead FIRST. Even if email delivery hiccups, the booking is
+// never lost: it appears immediately in the admin dashboard CRM.
+$leadId = leads_add([
+    'name' => $name,
+    'phone' => $phone,
+    'email' => $email,
+    'course' => $course,
+    'preferred' => $preferredStart,
+    'message' => mb_substr($message, 0, 2000),
+]);
+
+if ($leadId === 0) {
+    respond(false, 'We could not save your request right now. Please call us at (916) 544-1256.', 500);
+}
+
 $messageBody = $message !== '' ? wordwrap($message, 70) : '(none provided)';
 
-$body = "New enrollment request from the Nura Care Institute website\n\n"
+$body = "New booking request #{$leadId} from the Nura Care Institute website\n\n"
     . "Name: {$name}\n"
     . "Phone: {$phone}\n"
     . "Email: {$email}\n"
     . "Program: {$course}\n"
     . "Preferred start: " . ($preferredStart !== '' ? $preferredStart : '(none provided)') . "\n\n"
-    . "Message:\n{$messageBody}\n";
+    . "Message:\n{$messageBody}\n\n"
+    . "Manage this lead: " . NCI_ADMIN_URL . "?view=leads\n";
 
-$subject = '=?UTF-8?B?' . base64_encode(SITE_NAME . ' enrollment request: ' . $name) . '?=';
+$subject = '=?UTF-8?B?' . base64_encode('New booking request: ' . $course . ' from ' . $name) . '?=';
 
 $headers = [
-    'From: ' . SITE_NAME . ' Website <no-reply@nuracareinstitute.com>',
+    'From: ' . NCI_MAIL_FROM,
     'Reply-To: ' . $name . ' <' . $email . '>',
     'X-Mailer: PHP/' . phpversion(),
     'Content-Type: text/plain; charset=UTF-8',
 ];
 
-$sent = @mail(RECIPIENT_EMAIL, $subject, $body, implode("\r\n", $headers));
-
-if (!$sent) {
-    respond(false, 'We could not send your request right now. Please call us at (916) 544-1256.', 500);
+foreach (NCI_NOTIFY_EMAILS as $to) {
+    if (!@mail($to, $subject, $body, implode("\r\n", $headers))) {
+        @file_put_contents(store_path('mail.log'),
+            gmdate('c') . " lead #{$leadId} mail to {$to} failed\n", FILE_APPEND | LOCK_EX);
+    }
 }
 
-respond(true, 'Thank you. Your enrollment request has been sent.');
+// Optional SMS alert (requires credentials in config.php; skipped otherwise).
+if (NCI_SMS['enabled'] && NCI_SMS['key'] !== '' && function_exists('curl_init')) {
+    foreach (NCI_SMS['numbers'] as $num) {
+        $ch = curl_init('https://textbelt.com/text');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'phone' => $num,
+                'message' => "New booking: {$course} from {$name}, {$phone}. Details: " . NCI_ADMIN_URL,
+                'key' => NCI_SMS['key'],
+            ]),
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+    }
+}
+
+respond(true, 'Thank you. Your enrollment request has been received.');

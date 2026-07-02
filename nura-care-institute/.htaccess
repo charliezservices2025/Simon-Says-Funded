@@ -24,6 +24,9 @@ RewriteRule ^courses/cna-inservice-hours\.html$ /courses/cna-inservice-hours/ [R
 
 ErrorDocument 404 /404.html
 
+# The data directory (leads, analytics, logs) must never be web-readable
+RewriteRule ^data(/|$) - [F,L]
+
 # Anti-spam secret material must never be web-readable
 <FilesMatch "\.key$">
   <IfModule mod_authz_core.c>
