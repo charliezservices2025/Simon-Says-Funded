@@ -90,7 +90,12 @@
 
 <main id="main">
 
-  <section class="hero">
+  <section class="hero hero-video">
+    <video class="hero-bg" autoplay muted loop playsinline preload="metadata" poster="/assets/hero-poster.webp" aria-hidden="true" tabindex="-1">
+      <source src="/assets/hero-loop.webm" type="video/webm">
+      <source src="/assets/hero-loop.mp4" type="video/mp4">
+    </video>
+    <div class="hero-scrim" aria-hidden="true"></div>
     <div class="container">
       <div class="hero-copy">
         <span class="eyebrow">Certification training &amp; mobile CPR &middot; Northern California</span>
@@ -98,7 +103,7 @@
         <p class="hero-lede">Hands-on AHA BLS, ACLS, and CPR certification, plus Certified Nursing Assistant and Home Health Aide training, on our Orangevale campus and delivered onsite across Northern California.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary" href="/enroll/">Enroll Now</a>
-          <a class="btn btn-outline" href="/courses/">View Courses &amp; Pricing</a>
+          <a class="btn btn-outline-light" href="/courses/">View Courses &amp; Pricing</a>
         </div>
         <div class="hero-meta">
           <div>

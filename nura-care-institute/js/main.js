@@ -7,6 +7,19 @@
     yearEl.textContent = new Date().getFullYear();
   }
 
+  // Respect reduced-motion: drop the hero video entirely (the CSS poster
+  // background takes over) so no video bytes are fetched or played.
+  var heroVideo = document.querySelector(".hero-bg");
+  if (
+    heroVideo &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    heroVideo.removeAttribute("autoplay");
+    if (typeof heroVideo.pause === "function") heroVideo.pause();
+    heroVideo.parentNode.removeChild(heroVideo);
+  }
+
   // Mobile nav toggle
   var navToggle = document.getElementById("navToggle");
   var navLinks = document.getElementById("primaryNav");
