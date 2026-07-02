@@ -108,8 +108,146 @@ if ($user && ($_POST['action'] ?? '') === 'lead_status') {
     }
 }
 
+/* ---------- students (instructor CRM) ---------- */
+if ($user && ($_POST['action'] ?? '') === 'student_add') {
+    if (!csrf_ok()) {
+        $flash = 'Security check failed. Please try again.';
+    } elseif (trim((string) ($_POST['name'] ?? '')) === '') {
+        $flash = 'A student needs at least a name.';
+    } else {
+        $newId = students_add($_POST);
+        $flash = $newId ? 'Student #' . $newId . ' added.' : 'Could not save the student.';
+    }
+}
+
+if ($user && ($_POST['action'] ?? '') === 'student_update') {
+    if (!csrf_ok()) {
+        $flash = 'Security check failed. Please try again.';
+    } else {
+        $ok = students_update((int) ($_POST['id'] ?? 0), $_POST);
+        $flash = $ok ? 'Student #' . (int) $_POST['id'] . ' updated.' : 'Could not update that student.';
+    }
+}
+
+if ($user && ($_POST['action'] ?? '') === 'student_delete') {
+    if (!csrf_ok()) {
+        $flash = 'Security check failed. Please try again.';
+    } else {
+        $ok = students_delete((int) ($_POST['id'] ?? 0));
+        $flash = $ok ? 'Student removed.' : 'Could not remove that student.';
+    }
+}
+
+/* ---------- instructor forms library ---------- */
+const FORM_EXTENSIONS = [
+    'pdf' => 'application/pdf',
+    'doc' => 'application/msword',
+    'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'xls' => 'application/vnd.ms-excel',
+    'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'png' => 'image/png',
+    'jpg' => 'image/jpeg',
+    'jpeg' => 'image/jpeg',
+];
+
+function forms_dir(): string
+{
+    $dir = NCI_DATA_DIR . '/forms';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    return $dir;
+}
+
+if ($user && ($_POST['action'] ?? '') === 'form_upload') {
+    if (!csrf_ok()) {
+        $flash = 'Security check failed. Please try again.';
+    } else {
+        $f = $_FILES['file'] ?? null;
+        $ext = $f ? strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION)) : '';
+        if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $flash = 'Upload failed. Choose a file and try again; very large files may exceed the server limit.';
+        } elseif ((int) $f['size'] > 15 * 1024 * 1024) {
+            $flash = 'That file is over the 15 MB limit.';
+        } elseif (!isset(FORM_EXTENSIONS[$ext])) {
+            $flash = 'Allowed file types: PDF, Word, Excel, PNG, JPG.';
+        } else {
+            $slug = strtolower(trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', pathinfo((string) $f['name'], PATHINFO_FILENAME)), '-'));
+            $slug = $slug !== '' ? $slug : 'form';
+            $name = $slug . '.' . $ext;
+            $i = 2;
+            while (file_exists(forms_dir() . '/' . $name)) {
+                $name = $slug . '-' . $i++ . '.' . $ext;
+            }
+            $flash = move_uploaded_file($f['tmp_name'], forms_dir() . '/' . $name)
+                ? 'Uploaded ' . $name . '.'
+                : 'Could not store the file. Check that data/ is writable.';
+        }
+    }
+}
+
+if ($user && ($_POST['action'] ?? '') === 'form_delete') {
+    if (!csrf_ok()) {
+        $flash = 'Security check failed. Please try again.';
+    } else {
+        $name = basename((string) ($_POST['f'] ?? ''));
+        $path = forms_dir() . '/' . $name;
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $flash = ($name !== '' && isset(FORM_EXTENSIONS[$ext]) && is_file($path) && @unlink($path))
+            ? 'Deleted ' . $name . '.'
+            : 'Could not delete that file.';
+    }
+}
+
+/* ---------- file download (auth required; data/ is never web readable) ---------- */
+if ($user && ($_GET['action'] ?? '') === 'form_dl') {
+    $name = basename((string) ($_GET['f'] ?? ''));
+    $path = forms_dir() . '/' . $name;
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    if ($name === '' || !isset(FORM_EXTENSIONS[$ext]) || !is_file($path)) {
+        http_response_code(404);
+        exit('File not found.');
+    }
+    header('X-Content-Type-Options: nosniff');
+    header('Content-Type: ' . FORM_EXTENSIONS[$ext]);
+    $inline = in_array($ext, ['pdf', 'png', 'jpg', 'jpeg'], true);
+    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="' . $name . '"');
+    header('Content-Length: ' . (string) filesize($path));
+    readfile($path);
+    exit;
+}
+
+/* ---------- CSV export of students ---------- */
+function csv_cell(string $v): string
+{
+    // Guard against spreadsheet formula injection when opened in Excel.
+    return preg_match('/^[=+\-@\t]/', $v) ? "'" . $v : $v;
+}
+
+if ($user && ($_GET['action'] ?? '') === 'students_csv') {
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="nci-students-' . gmdate('Y-m-d') . '.csv"');
+    echo "\xEF\xBB\xBF";
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['ID', 'Name', 'Address', 'Email', 'Mobile', 'Course', 'Start date', 'Duration', 'Status', 'Notes', 'Added (UTC)', 'Updated (UTC)']);
+    foreach (students_all() as $s) {
+        fputcsv($out, [
+            (int) $s['id'],
+            csv_cell((string) $s['name']), csv_cell((string) $s['address']),
+            csv_cell((string) $s['email']), csv_cell((string) $s['mobile']),
+            csv_cell((string) $s['course']), csv_cell((string) $s['start']),
+            csv_cell((string) $s['duration']),
+            STUDENT_STATUSES[$s['status']] ?? (string) $s['status'],
+            csv_cell((string) $s['notes']),
+            gmdate('Y-m-d H:i', (int) $s['ts']),
+            gmdate('Y-m-d H:i', (int) $s['updated']),
+        ]);
+    }
+    exit;
+}
+
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'traffic', 'leads', 'status'], true)) {
+if (!in_array($view, ['overview', 'traffic', 'leads', 'students', 'forms', 'status'], true)) {
     $view = 'overview';
 }
 
@@ -196,6 +334,71 @@ foreach (LEAD_STATUSES as $k => $label) {
 $shownLeads = $statusFilter === 'all' ? $leads
     : array_values(array_filter($leads, fn($l) => ($l['status'] ?? 'new') === $statusFilter));
 
+/* students list + filters */
+$students = $user ? students_all() : [];
+$sCourse = (string) ($_GET['course'] ?? 'all');
+$sQuery = trim((string) ($_GET['q'] ?? ''));
+$shownStudents = array_values(array_filter($students, function ($s) use ($sCourse, $sQuery) {
+    if ($sCourse !== 'all' && ($s['course'] ?? '') !== $sCourse) {
+        return false;
+    }
+    if ($sQuery !== '') {
+        $hay = strtolower(implode(' ', [$s['name'] ?? '', $s['email'] ?? '', $s['mobile'] ?? '', $s['address'] ?? '', $s['notes'] ?? '']));
+        return str_contains($hay, strtolower($sQuery));
+    }
+    return true;
+}));
+$activeStudents = count(array_filter($students, fn($s) => in_array($s['status'] ?? '', ['enrolled', 'in-progress'], true)));
+
+/* printable class roster: minimal standalone page, then stop */
+if ($user && $view === 'students' && isset($_GET['print'])) {
+    $rosterTitle = $sCourse === 'all' ? 'All courses' : $sCourse;
+    ?><!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Class Roster | Nura Care Institute</title>
+<style>
+  body { font: 14px/1.5 "Public Sans", system-ui, sans-serif; color: #1b1e22; margin: 32px; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .sub { color: #555; margin: 0 0 18px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #9aa0aa; padding: 8px 10px; text-align: left; font-size: 13px; }
+  th { background: #f0f2f5; }
+  td.sig { width: 160px; }
+  .toolbar { margin-bottom: 16px; }
+  .toolbar a, .toolbar button { font: 600 14px "Public Sans", system-ui, sans-serif; margin-right: 10px; padding: 8px 14px; border: 1px solid #46587a; border-radius: 8px; background: #46587a; color: #fff; cursor: pointer; text-decoration: none; display: inline-block; }
+  .toolbar a { background: #fff; color: #46587a; }
+  @media print { .toolbar { display: none; } body { margin: 0; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <a href="?view=students<?= $sCourse !== 'all' ? '&amp;course=' . h(urlencode($sCourse)) : '' ?>">Back to dashboard</a>
+  <button onclick="window.print()">Print this roster</button>
+</div>
+<h1>Nura Care Institute &middot; Class Roster</h1>
+<p class="sub"><?= h($rosterTitle) ?> &middot; <?= count($shownStudents) ?> student(s) &middot; printed <?= h(gmdate('M j, Y')) ?></p>
+<table>
+  <thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>Email</th><th>Course</th><th>Start</th><th>Duration</th><th class="sig">Signature</th></tr></thead>
+  <tbody>
+    <?php $n = 0; foreach ($shownStudents as $s): $n++; ?>
+      <tr>
+        <td><?= $n ?></td><td><?= h($s['name']) ?></td><td><?= h($s['mobile']) ?></td>
+        <td><?= h($s['email']) ?></td><td><?= h($s['course']) ?></td>
+        <td><?= h($s['start']) ?></td><td><?= h($s['duration']) ?></td><td class="sig"></td>
+      </tr>
+    <?php endforeach; ?>
+    <?php if (!$shownStudents): ?><tr><td colspan="8">No students match this filter yet.</td></tr><?php endif; ?>
+  </tbody>
+</table>
+</body>
+</html><?php
+    exit;
+}
+
 function sum_days(array $days): array
 {
     $t = ['m' => 0, 't' => 0, 'd' => 0];
@@ -262,6 +465,9 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
       <a href="?view=traffic" <?= $view === 'traffic' ? 'aria-current="page"' : '' ?>>Traffic</a>
       <a href="?view=leads" <?= $view === 'leads' ? 'aria-current="page"' : '' ?>>Leads &amp; Bookings
         <?php if ($counts['new']): ?><span class="pill"><?= $counts['new'] ?></span><?php endif; ?></a>
+      <a href="?view=students" <?= $view === 'students' ? 'aria-current="page"' : '' ?>>Students
+        <?php if ($activeStudents): ?><span class="pill pill-quiet"><?= $activeStudents ?></span><?php endif; ?></a>
+      <a href="?view=forms" <?= $view === 'forms' ? 'aria-current="page"' : '' ?>>Instructor Forms</a>
       <a href="?view=status" <?= $view === 'status' ? 'aria-current="page"' : '' ?>>Site Status</a>
       <div class="sidenav-foot">
         <a href="/" target="_blank" rel="noopener">Open website</a>
@@ -407,8 +613,187 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
               </label>
               <button type="submit">Save</button>
             </form>
+            <p class="lead-copy"><a href="?view=students&amp;prefill_name=<?= h(urlencode($l['name'])) ?>&amp;prefill_mobile=<?= h(urlencode($l['phone'])) ?>&amp;prefill_email=<?= h(urlencode($l['email'])) ?>&amp;prefill_course=<?= h(urlencode($l['course'])) ?>#add">Copy to Students &rarr;</a></p>
           </section>
         <?php endforeach; ?>
+
+      <?php elseif ($view === 'students'): ?>
+        <h1 class="page-title">Students</h1>
+        <p class="page-sub">Your typed student records: no more handwriting. Add each student once, then filter, export, or print a class roster.</p>
+
+        <?php
+        $prefill = fn(string $k): string => h((string) ($_GET['prefill_' . $k] ?? ''));
+        $prefillOpen = isset($_GET['prefill_name']);
+        ?>
+        <details class="card add-card" id="add" <?= $prefillOpen ? 'open' : '' ?>>
+          <summary>+ Add a student</summary>
+          <form method="post" class="form-grid">
+            <input type="hidden" name="action" value="student_add">
+            <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+            <label>Full name *<input type="text" name="name" required maxlength="120" value="<?= $prefill('name') ?>"></label>
+            <label>Mobile phone<input type="tel" name="mobile" maxlength="40" value="<?= $prefill('mobile') ?>"></label>
+            <label>Email<input type="email" name="email" maxlength="120" value="<?= $prefill('email') ?>"></label>
+            <label>Address<input type="text" name="address" maxlength="200" placeholder="Street, city, ZIP"></label>
+            <label>Course
+              <select name="course">
+                <?php
+                $pc = (string) ($_GET['prefill_course'] ?? '');
+                foreach (STUDENT_COURSES as $c):
+                    // Match "Certified Nursing Assistant (CNA-100, $1,500)" from a lead
+                    // to the option "Certified Nursing Assistant (CNA)" by base name.
+                    $base = trim(explode('(', $c)[0]);
+                    $sel = $pc !== '' && $base !== '' && stripos($pc, $base) !== false;
+                ?>
+                  <option value="<?= h($c) ?>" <?= $sel ? 'selected' : '' ?>><?= h($c) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </label>
+            <label>Status
+              <select name="status">
+                <?php foreach (STUDENT_STATUSES as $k => $label): ?>
+                  <option value="<?= $k ?>"><?= h($label) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </label>
+            <label>Start date<input type="date" name="start"></label>
+            <label>Duration<input type="text" name="duration" maxlength="80" placeholder="e.g. 6 weeks, or Jul 8 to Aug 15"></label>
+            <label class="span2">Notes<input type="text" name="notes" maxlength="500" placeholder="Anything worth remembering"></label>
+            <div class="span2 form-actions"><button type="submit">Add student</button></div>
+          </form>
+        </details>
+
+        <form method="get" class="toolbar" action="">
+          <input type="hidden" name="view" value="students">
+          <input type="search" name="q" value="<?= h($sQuery) ?>" placeholder="Search name, phone, email">
+          <select name="course">
+            <option value="all">All courses</option>
+            <?php foreach (STUDENT_COURSES as $c): ?>
+              <option value="<?= h($c) ?>" <?= $sCourse === $c ? 'selected' : '' ?>><?= h($c) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <button type="submit">Filter</button>
+          <span class="toolbar-spacer"></span>
+          <a class="btn-ghost" href="?view=students&amp;print=1<?= $sCourse !== 'all' ? '&amp;course=' . h(urlencode($sCourse)) : '' ?><?= $sQuery !== '' ? '&amp;q=' . h(urlencode($sQuery)) : '' ?>" target="_blank">Print roster</a>
+          <a class="btn-ghost" href="?action=students_csv">Export CSV</a>
+        </form>
+
+        <?php if (!$shownStudents): ?>
+          <section class="card"><p class="empty"><?= $students ? 'No students match this filter.' : 'No students yet. Add your first student above, or copy one over from Leads &amp; Bookings.' ?></p></section>
+        <?php endif; ?>
+
+        <?php foreach ($shownStudents as $s): ?>
+          <section class="card lead">
+            <div class="lead-top">
+              <span class="lead-id">#<?= (int) $s['id'] ?></span>
+              <h2 class="lead-name"><?= h($s['name']) ?></h2>
+              <span class="status st-<?= h($s['status']) ?>"><?= h(STUDENT_STATUSES[$s['status']] ?? $s['status']) ?></span>
+            </div>
+            <dl class="lead-grid">
+              <div><dt>Course</dt><dd><?= h($s['course'] ?: 'not set') ?></dd></div>
+              <div><dt>Mobile</dt><dd><?= $s['mobile'] ? '<a href="tel:' . h(preg_replace('/[^0-9+]/', '', $s['mobile'])) . '">' . h($s['mobile']) . '</a>' : 'not set' ?></dd></div>
+              <div><dt>Email</dt><dd><?= $s['email'] ? '<a href="mailto:' . h($s['email']) . '">' . h($s['email']) . '</a>' : 'not set' ?></dd></div>
+              <div><dt>Address</dt><dd><?= h($s['address'] ?: 'not set') ?></dd></div>
+              <div><dt>Start</dt><dd><?= h($s['start'] ?: 'not set') ?></dd></div>
+              <div><dt>Duration</dt><dd><?= h($s['duration'] ?: 'not set') ?></dd></div>
+            </dl>
+            <?php if (!empty($s['notes'])): ?><p class="lead-msg"><?= nl2br(h($s['notes'])) ?></p><?php endif; ?>
+            <details class="edit-details">
+              <summary>Edit</summary>
+              <form method="post" class="form-grid">
+                <input type="hidden" name="action" value="student_update">
+                <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+                <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
+                <label>Full name *<input type="text" name="name" required maxlength="120" value="<?= h($s['name']) ?>"></label>
+                <label>Mobile phone<input type="tel" name="mobile" maxlength="40" value="<?= h($s['mobile']) ?>"></label>
+                <label>Email<input type="email" name="email" maxlength="120" value="<?= h($s['email']) ?>"></label>
+                <label>Address<input type="text" name="address" maxlength="200" value="<?= h($s['address']) ?>"></label>
+                <label>Course
+                  <select name="course">
+                    <?php foreach (STUDENT_COURSES as $c): ?>
+                      <option value="<?= h($c) ?>" <?= $s['course'] === $c ? 'selected' : '' ?>><?= h($c) ?></option>
+                    <?php endforeach; ?>
+                    <?php if ($s['course'] !== '' && !in_array($s['course'], STUDENT_COURSES, true)): ?>
+                      <option value="<?= h($s['course']) ?>" selected><?= h($s['course']) ?></option>
+                    <?php endif; ?>
+                  </select>
+                </label>
+                <label>Status
+                  <select name="status">
+                    <?php foreach (STUDENT_STATUSES as $k => $label): ?>
+                      <option value="<?= $k ?>" <?= $s['status'] === $k ? 'selected' : '' ?>><?= h($label) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </label>
+                <label>Start date<input type="date" name="start" value="<?= h($s['start']) ?>"></label>
+                <label>Duration<input type="text" name="duration" maxlength="80" value="<?= h($s['duration']) ?>"></label>
+                <label class="span2">Notes<input type="text" name="notes" maxlength="500" value="<?= h($s['notes']) ?>"></label>
+                <div class="span2 form-actions">
+                  <button type="submit">Save changes</button>
+                </div>
+              </form>
+              <form method="post" class="delete-form" onsubmit="return confirm('Remove <?= h(addslashes($s['name'])) ?> from students? This cannot be undone.');">
+                <input type="hidden" name="action" value="student_delete">
+                <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+                <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
+                <button type="submit" class="btn-danger">Remove student</button>
+              </form>
+            </details>
+          </section>
+        <?php endforeach; ?>
+
+      <?php elseif ($view === 'forms'): ?>
+        <h1 class="page-title">Instructor Forms</h1>
+        <p class="page-sub">Your private form library, behind this sign in. Upload every form you use once, then open or print them from any device.</p>
+
+        <section class="card">
+          <div class="card-head"><h2>Upload a form</h2><span class="card-note">PDF, Word, Excel, PNG, JPG &middot; up to 15 MB</span></div>
+          <form method="post" enctype="multipart/form-data" class="upload-form">
+            <input type="hidden" name="action" value="form_upload">
+            <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+            <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" required>
+            <button type="submit">Upload</button>
+          </form>
+        </section>
+
+        <?php
+        $formFiles = [];
+        foreach (glob(forms_dir() . '/*') ?: [] as $fp) {
+            $fext = strtolower(pathinfo($fp, PATHINFO_EXTENSION));
+            if (is_file($fp) && isset(FORM_EXTENSIONS[$fext])) {
+                $formFiles[] = ['name' => basename($fp), 'size' => (int) filesize($fp), 'mtime' => (int) filemtime($fp)];
+            }
+        }
+        usort($formFiles, fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+        ?>
+        <section class="card">
+          <div class="card-head"><h2>Your forms</h2><span class="card-note"><?= count($formFiles) ?> file(s)</span></div>
+          <?php if (!$formFiles): ?>
+            <p class="empty">Nothing uploaded yet. Add your sign in sheets, skills checklists, state forms, and handouts above; they stay private to this dashboard.</p>
+          <?php else: ?>
+            <ul class="files">
+              <?php foreach ($formFiles as $ff): ?>
+                <li class="file-row">
+                  <a class="file-name" href="?action=form_dl&amp;f=<?= h(urlencode($ff['name'])) ?>" target="_blank"><?= h($ff['name']) ?></a>
+                  <span class="file-meta"><?= $ff['size'] >= 1048576 ? round($ff['size'] / 1048576, 1) . ' MB' : max(1, (int) round($ff['size'] / 1024)) . ' KB' ?> &middot; <?= h(gmdate('M j, Y', $ff['mtime'])) ?></span>
+                  <form method="post" class="delete-form-inline" onsubmit="return confirm('Delete <?= h(addslashes($ff['name'])) ?>?');">
+                    <input type="hidden" name="action" value="form_delete">
+                    <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+                    <input type="hidden" name="f" value="<?= h($ff['name']) ?>">
+                    <button type="submit" class="btn-danger">Delete</button>
+                  </form>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Official state forms</h2></div>
+          <ul class="quick">
+            <li><a href="https://www.cdph.ca.gov/CDPH%20Document%20Library/ControlledForms/cdph278D.pdf" target="_blank" rel="noopener">CDPH 278D: CNA in-service record (fillable PDF, type before printing)</a></li>
+            <li><a href="https://www.cdph.ca.gov/Programs/CHCQ/LCP/Pages/CNA.aspx" target="_blank" rel="noopener">CDPH CNA program page (all state forms)</a></li>
+          </ul>
+        </section>
 
       <?php else: /* status */ ?>
         <h1 class="page-title">Site Status</h1>

@@ -119,6 +119,88 @@ function leads_set_status(int $id, string $status, string $note): bool
     return $found;
 }
 
+/* ---------------- Students (instructor CRM) ---------------- */
+
+const STUDENT_COURSES = [
+    'Certified Nursing Assistant (CNA)',
+    'Home Health Aide (HHA)',
+    'BLS / CPR Certification',
+    'ACLS Certification',
+    'Restorative Nursing Assistant (RNA)',
+    'CNA Continuing Education (6 CEUs)',
+    'Other',
+];
+
+const STUDENT_STATUSES = [
+    'enrolled' => 'Enrolled',
+    'in-progress' => 'In progress',
+    'completed' => 'Completed',
+    'withdrawn' => 'Withdrawn',
+];
+
+const STUDENT_FIELDS = ['name', 'address', 'email', 'mobile', 'course', 'start', 'duration', 'notes'];
+
+function students_add(array $s): int
+{
+    $id = 0;
+    store_update('students.json', ['seq' => 0, 'students' => []], function ($d) use ($s, &$id) {
+        $d['seq'] = (int) ($d['seq'] ?? 0) + 1;
+        $id = $d['seq'];
+        $row = ['id' => $id];
+        foreach (STUDENT_FIELDS as $f) {
+            $row[$f] = mb_substr(trim((string) ($s[$f] ?? '')), 0, 500);
+        }
+        $row['status'] = isset(STUDENT_STATUSES[$s['status'] ?? '']) ? $s['status'] : 'enrolled';
+        $row['ts'] = time();
+        $row['updated'] = time();
+        array_unshift($d['students'], $row);
+        return $d;
+    });
+    return $id;
+}
+
+function students_all(): array
+{
+    $d = store_read('students.json', ['seq' => 0, 'students' => []]);
+    return $d['students'] ?? [];
+}
+
+function students_update(int $id, array $fields): bool
+{
+    $found = false;
+    store_update('students.json', ['seq' => 0, 'students' => []], function ($d) use ($id, $fields, &$found) {
+        foreach ($d['students'] as &$s) {
+            if ((int) $s['id'] === $id) {
+                foreach (STUDENT_FIELDS as $f) {
+                    if (array_key_exists($f, $fields)) {
+                        $s[$f] = mb_substr(trim((string) $fields[$f]), 0, 500);
+                    }
+                }
+                if (isset($fields['status']) && isset(STUDENT_STATUSES[$fields['status']])) {
+                    $s['status'] = $fields['status'];
+                }
+                $s['updated'] = time();
+                $found = true;
+                break;
+            }
+        }
+        return $d;
+    });
+    return $found;
+}
+
+function students_delete(int $id): bool
+{
+    $found = false;
+    store_update('students.json', ['seq' => 0, 'students' => []], function ($d) use ($id, &$found) {
+        $before = count($d['students']);
+        $d['students'] = array_values(array_filter($d['students'], fn($s) => (int) $s['id'] !== $id));
+        $found = count($d['students']) < $before;
+        return $d;
+    });
+    return $found;
+}
+
 /* ---------------- Analytics ---------------- */
 
 function analytics_record(string $path, string $device): void
