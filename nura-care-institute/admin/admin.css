@@ -365,7 +365,10 @@ a:hover { color: var(--ember-text); }
 }
 .form-grid input,
 .form-grid select {
-  font: 400 0.95rem/1.3 inherit;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.3;
   font-family: inherit;
   padding: 9px 11px;
   border: 1px solid var(--line);
@@ -381,7 +384,10 @@ a:hover { color: var(--ember-text); }
 .form-actions button,
 .toolbar button,
 .upload-form button {
-  font: 700 0.9rem/1 inherit;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1;
   font-family: inherit;
   background: var(--slate);
   color: var(--white);
@@ -403,7 +409,10 @@ a:hover { color: var(--ember-text); }
 }
 .toolbar input[type="search"],
 .toolbar select {
-  font: 400 0.92rem/1.3 inherit;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 0.92rem;
+  line-height: 1.3;
   font-family: inherit;
   padding: 9px 11px;
   border: 1px solid var(--line);
@@ -415,7 +424,10 @@ a:hover { color: var(--ember-text); }
 .toolbar input[type="search"] { flex: 1 1 190px; }
 .toolbar-spacer { flex: 1 0 0; }
 .btn-ghost {
-  font: 700 0.85rem/1 inherit;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -443,7 +455,10 @@ a:hover { color: var(--ember-text); }
 .edit-details .form-grid { margin-top: 6px; }
 .delete-form { margin-top: 12px; }
 .btn-danger {
-  font: 700 0.8rem/1 inherit;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1;
   font-family: inherit;
   background: var(--white);
   color: var(--err);
@@ -467,7 +482,10 @@ a:hover { color: var(--ember-text); }
 .upload-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .upload-form input[type="file"] {
   flex: 1 1 240px;
-  font: 400 0.88rem/1.3 inherit;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 0.88rem;
+  line-height: 1.3;
   font-family: inherit;
   padding: 8px;
   border: 1px dashed var(--line);
@@ -500,4 +518,21 @@ a:hover { color: var(--ember-text); }
   .form-grid { grid-template-columns: 1fr; }
   .toolbar-spacer { display: none; }
   .toolbar .btn-ghost { flex: 1 1 auto; text-align: center; }
+}
+
+/* error flash: failures must not wear the success green */
+.flash-err {
+  background: #fdeceb;
+  border-color: #e4b6b3;
+  color: var(--err);
+}
+
+/* 16px inputs on phones so iOS does not zoom the page on focus */
+@media (max-width: 620px) {
+  .form-grid input,
+  .form-grid select,
+  .toolbar input[type="search"],
+  .toolbar select {
+    font-size: 16px;
+  }
 }

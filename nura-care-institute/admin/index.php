@@ -97,45 +97,92 @@ if ($user && time() - (int) ($_SESSION['login_at'] ?? 0) > 43200) {
     $user = null;
 }
 
-/* ---------- lead status update ---------- */
+/* ---------- flash + Post/Redirect/Get ----------
+   Every state-changing POST redirects afterward so a browser refresh can
+   never resubmit it (no duplicate students, no double uploads). The
+   message survives the redirect in the session. */
 $flash = '';
+$flashErr = false;
+if (isset($_SESSION['flash'])) {
+    [$flash, $flashErr] = $_SESSION['flash'];
+    unset($_SESSION['flash']);
+}
+
+/** Query params worth preserving across a redirect (filters, current view). */
+function keep_params(string $view): array
+{
+    $out = ['view' => $view];
+    foreach (['status', 'course', 'q'] as $k) {
+        $v = (string) ($_GET[$k] ?? '');
+        if ($v !== '' && $v !== 'all') {
+            $out[$k] = $v;
+        }
+    }
+    return $out;
+}
+
+function flash_redirect(string $msg, bool $isError, array $params): never
+{
+    $_SESSION['flash'] = [$msg, $isError];
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?' . http_build_query($params), true, 303);
+    exit;
+}
+
+/* A POST bigger than the server's post_max_size arrives with $_POST and
+   $_FILES both empty; without this check it would fail with no message. */
+if ($user && $_SERVER['REQUEST_METHOD'] === 'POST' && !$_POST && !$_FILES
+    && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    flash_redirect('That file is larger than the server accepts (post_max_size). Try a smaller file.', true, ['view' => 'forms']);
+}
+
+/* ---------- lead status update ---------- */
 if ($user && ($_POST['action'] ?? '') === 'lead_status') {
     if (!csrf_ok()) {
-        $flash = 'Security check failed. Please try again.';
-    } else {
-        $ok = leads_set_status((int) ($_POST['id'] ?? 0), (string) ($_POST['status'] ?? ''), trim((string) ($_POST['note'] ?? '')));
-        $flash = $ok ? 'Lead #' . (int) $_POST['id'] . ' updated.' : 'Could not update that lead.';
+        flash_redirect('Security check failed. Please try again.', true, keep_params('leads'));
     }
+    $ok = leads_set_status((int) ($_POST['id'] ?? 0), (string) ($_POST['status'] ?? ''), trim((string) ($_POST['note'] ?? '')));
+    flash_redirect($ok ? 'Lead #' . (int) $_POST['id'] . ' updated.' : 'Could not update that lead.', !$ok, keep_params('leads'));
 }
 
 /* ---------- students (instructor CRM) ---------- */
+$addOld = [];      // re-fills the add form when validation fails, so nothing typed is lost
 if ($user && ($_POST['action'] ?? '') === 'student_add') {
     if (!csrf_ok()) {
-        $flash = 'Security check failed. Please try again.';
+        $flash = 'Security check failed. Your typed details are still below; press Add student again.';
+        $flashErr = true;
+        $addOld = $_POST;
     } elseif (trim((string) ($_POST['name'] ?? '')) === '') {
-        $flash = 'A student needs at least a name.';
+        $flash = 'A student needs at least a name. Your other details are still below.';
+        $flashErr = true;
+        $addOld = $_POST;
     } else {
         $newId = students_add($_POST);
-        $flash = $newId ? 'Student #' . $newId . ' added.' : 'Could not save the student.';
+        if ($newId) {
+            flash_redirect('Student #' . $newId . ' added.', false, keep_params('students'));
+        }
+        $flash = 'Could not save the student.';
+        $flashErr = true;
+        $addOld = $_POST;
     }
 }
 
 if ($user && ($_POST['action'] ?? '') === 'student_update') {
     if (!csrf_ok()) {
-        $flash = 'Security check failed. Please try again.';
-    } else {
-        $ok = students_update((int) ($_POST['id'] ?? 0), $_POST);
-        $flash = $ok ? 'Student #' . (int) $_POST['id'] . ' updated.' : 'Could not update that student.';
+        flash_redirect('Security check failed. Please try again.', true, keep_params('students'));
     }
+    if (trim((string) ($_POST['name'] ?? '')) === '') {
+        flash_redirect('A student needs at least a name; the change was not saved.', true, keep_params('students'));
+    }
+    $ok = students_update((int) ($_POST['id'] ?? 0), $_POST);
+    flash_redirect($ok ? 'Student #' . (int) $_POST['id'] . ' updated.' : 'Could not update that student.', !$ok, keep_params('students'));
 }
 
 if ($user && ($_POST['action'] ?? '') === 'student_delete') {
     if (!csrf_ok()) {
-        $flash = 'Security check failed. Please try again.';
-    } else {
-        $ok = students_delete((int) ($_POST['id'] ?? 0));
-        $flash = $ok ? 'Student removed.' : 'Could not remove that student.';
+        flash_redirect('Security check failed. Please try again.', true, keep_params('students'));
     }
+    $ok = students_delete((int) ($_POST['id'] ?? 0));
+    flash_redirect($ok ? 'Student removed.' : 'Could not remove that student.', !$ok, keep_params('students'));
 }
 
 /* ---------- instructor forms library ---------- */
@@ -161,42 +208,48 @@ function forms_dir(): string
 
 if ($user && ($_POST['action'] ?? '') === 'form_upload') {
     if (!csrf_ok()) {
-        $flash = 'Security check failed. Please try again.';
-    } else {
-        $f = $_FILES['file'] ?? null;
-        $ext = $f ? strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION)) : '';
-        if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            $flash = 'Upload failed. Choose a file and try again; very large files may exceed the server limit.';
-        } elseif ((int) $f['size'] > 15 * 1024 * 1024) {
-            $flash = 'That file is over the 15 MB limit.';
-        } elseif (!isset(FORM_EXTENSIONS[$ext])) {
-            $flash = 'Allowed file types: PDF, Word, Excel, PNG, JPG.';
-        } else {
-            $slug = strtolower(trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', pathinfo((string) $f['name'], PATHINFO_FILENAME)), '-'));
-            $slug = $slug !== '' ? $slug : 'form';
-            $name = $slug . '.' . $ext;
-            $i = 2;
-            while (file_exists(forms_dir() . '/' . $name)) {
-                $name = $slug . '-' . $i++ . '.' . $ext;
-            }
-            $flash = move_uploaded_file($f['tmp_name'], forms_dir() . '/' . $name)
-                ? 'Uploaded ' . $name . '.'
-                : 'Could not store the file. Check that data/ is writable.';
-        }
+        flash_redirect('Security check failed. Please try again.', true, ['view' => 'forms']);
     }
+    $f = $_FILES['file'] ?? null;
+    $ext = $f ? strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION)) : '';
+    if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        flash_redirect('Upload failed. Choose a file and try again; very large files may exceed the server limit.', true, ['view' => 'forms']);
+    }
+    if ((int) $f['size'] > 15 * 1024 * 1024) {
+        flash_redirect('That file is over the 15 MB limit.', true, ['view' => 'forms']);
+    }
+    if (!isset(FORM_EXTENSIONS[$ext])) {
+        flash_redirect('Allowed file types: PDF, Word, Excel, PNG, JPG.', true, ['view' => 'forms']);
+    }
+    $slug = strtolower(trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', pathinfo((string) $f['name'], PATHINFO_FILENAME)), '-'));
+    $slug = $slug !== '' ? $slug : 'form';
+    // Claim the target name atomically (fopen 'x' fails if it exists), so two
+    // simultaneous uploads of the same filename can never overwrite each other.
+    $name = $slug . '.' . $ext;
+    $i = 2;
+    while (!($fh = @fopen(forms_dir() . '/' . $name, 'x'))) {
+        if ($i > 500) {
+            flash_redirect('Could not store the file. Check that data/ is writable.', true, ['view' => 'forms']);
+        }
+        $name = $slug . '-' . $i++ . '.' . $ext;
+    }
+    fclose($fh);
+    if (move_uploaded_file($f['tmp_name'], forms_dir() . '/' . $name)) {
+        flash_redirect('Uploaded ' . $name . '.', false, ['view' => 'forms']);
+    }
+    @unlink(forms_dir() . '/' . $name);
+    flash_redirect('Could not store the file. Check that data/ is writable.', true, ['view' => 'forms']);
 }
 
 if ($user && ($_POST['action'] ?? '') === 'form_delete') {
     if (!csrf_ok()) {
-        $flash = 'Security check failed. Please try again.';
-    } else {
-        $name = basename((string) ($_POST['f'] ?? ''));
-        $path = forms_dir() . '/' . $name;
-        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-        $flash = ($name !== '' && isset(FORM_EXTENSIONS[$ext]) && is_file($path) && @unlink($path))
-            ? 'Deleted ' . $name . '.'
-            : 'Could not delete that file.';
+        flash_redirect('Security check failed. Please try again.', true, ['view' => 'forms']);
     }
+    $name = basename((string) ($_POST['f'] ?? ''));
+    $path = forms_dir() . '/' . $name;
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    $ok = ($name !== '' && isset(FORM_EXTENSIONS[$ext]) && is_file($path) && @unlink($path));
+    flash_redirect($ok ? 'Deleted ' . $name . '.' : 'Could not delete that file.', !$ok, ['view' => 'forms']);
 }
 
 /* ---------- file download (auth required; data/ is never web readable) ---------- */
@@ -220,17 +273,44 @@ if ($user && ($_GET['action'] ?? '') === 'form_dl') {
 /* ---------- CSV export of students ---------- */
 function csv_cell(string $v): string
 {
-    // Guard against spreadsheet formula injection when opened in Excel.
+    // Plain numbers and phone numbers ("+1 916...", "(916) 555-0134") are
+    // safe as-is; everything else starting with a formula trigger gets the
+    // classic apostrophe guard against spreadsheet formula injection.
+    if (preg_match('/^[+\-]?[\d\s().\-\/]+$/', $v)) {
+        return $v;
+    }
     return preg_match('/^[=+\-@\t]/', $v) ? "'" . $v : $v;
+}
+
+/** One shared filter so the list, the CSV export, and the roster always agree. */
+function students_filtered(array $students, string $course, string $q): array
+{
+    return array_values(array_filter($students, function ($s) use ($course, $q) {
+        if ($course !== 'all' && $course !== '' && ($s['course'] ?? '') !== $course) {
+            return false;
+        }
+        if ($q !== '') {
+            $hay = mb_strtolower(implode(' ', [$s['name'] ?? '', $s['email'] ?? '', $s['mobile'] ?? '', $s['address'] ?? '', $s['notes'] ?? '']));
+            return str_contains($hay, mb_strtolower($q));
+        }
+        return true;
+    }));
+}
+
+/** Local (Pacific) date so printed rosters and file names match the classroom clock. */
+function local_date(string $format): string
+{
+    return (new DateTime('now', new DateTimeZone('America/Los_Angeles')))->format($format);
 }
 
 if ($user && ($_GET['action'] ?? '') === 'students_csv') {
     header('Content-Type: text/csv; charset=UTF-8');
-    header('Content-Disposition: attachment; filename="nci-students-' . gmdate('Y-m-d') . '.csv"');
+    header('Content-Disposition: attachment; filename="nci-students-' . local_date('Y-m-d') . '.csv"');
     echo "\xEF\xBB\xBF";
     $out = fopen('php://output', 'w');
     fputcsv($out, ['ID', 'Name', 'Address', 'Email', 'Mobile', 'Course', 'Start date', 'Duration', 'Status', 'Notes', 'Added (UTC)', 'Updated (UTC)']);
-    foreach (students_all() as $s) {
+    $exportRows = students_filtered(students_all(), (string) ($_GET['course'] ?? 'all'), trim((string) ($_GET['q'] ?? '')));
+    foreach ($exportRows as $s) {
         fputcsv($out, [
             (int) $s['id'],
             csv_cell((string) $s['name']), csv_cell((string) $s['address']),
@@ -338,16 +418,7 @@ $shownLeads = $statusFilter === 'all' ? $leads
 $students = $user ? students_all() : [];
 $sCourse = (string) ($_GET['course'] ?? 'all');
 $sQuery = trim((string) ($_GET['q'] ?? ''));
-$shownStudents = array_values(array_filter($students, function ($s) use ($sCourse, $sQuery) {
-    if ($sCourse !== 'all' && ($s['course'] ?? '') !== $sCourse) {
-        return false;
-    }
-    if ($sQuery !== '') {
-        $hay = strtolower(implode(' ', [$s['name'] ?? '', $s['email'] ?? '', $s['mobile'] ?? '', $s['address'] ?? '', $s['notes'] ?? '']));
-        return str_contains($hay, strtolower($sQuery));
-    }
-    return true;
-}));
+$shownStudents = students_filtered($students, $sCourse, $sQuery);
 $activeStudents = count(array_filter($students, fn($s) => in_array($s['status'] ?? '', ['enrolled', 'in-progress'], true)));
 
 /* printable class roster: minimal standalone page, then stop */
@@ -380,7 +451,7 @@ if ($user && $view === 'students' && isset($_GET['print'])) {
   <button onclick="window.print()">Print this roster</button>
 </div>
 <h1>Nura Care Institute &middot; Class Roster</h1>
-<p class="sub"><?= h($rosterTitle) ?> &middot; <?= count($shownStudents) ?> student(s) &middot; printed <?= h(gmdate('M j, Y')) ?></p>
+<p class="sub"><?= h($rosterTitle) ?> &middot; <?= count($shownStudents) ?> student(s) &middot; printed <?= h(local_date('M j, Y')) ?></p>
 <table>
   <thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>Email</th><th>Course</th><th>Start</th><th>Duration</th><th class="sig">Signature</th></tr></thead>
   <tbody>
@@ -477,7 +548,7 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
     <div class="scrim" id="navScrim" hidden></div>
 
     <main class="content">
-      <?php if ($flash): ?><p class="flash" role="status"><?= h($flash) ?></p><?php endif; ?>
+      <?php if ($flash): ?><p class="flash <?= $flashErr ? 'flash-err' : '' ?>" role="<?= $flashErr ? 'alert' : 'status' ?>"><?= h($flash) ?></p><?php endif; ?>
 
       <?php if ($view === 'overview'): ?>
         <h1 class="page-title">Overview</h1>
@@ -622,42 +693,68 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
         <p class="page-sub">Your typed student records: no more handwriting. Add each student once, then filter, export, or print a class roster.</p>
 
         <?php
-        $prefill = fn(string $k): string => h((string) ($_GET['prefill_' . $k] ?? ''));
-        $prefillOpen = isset($_GET['prefill_name']);
+        // Field values survive a failed submit ($addOld) and arrive from a
+        // lead via the Copy to Students link (prefill_* query params).
+        $addVal = fn(string $k): string => h(trim((string) ($addOld[$k] ?? $_GET['prefill_' . $k] ?? '')));
+        $addOpen = $addOld || isset($_GET['prefill_name']);
+
+        // Map a lead's course wording onto a course option; keywords are
+        // checked in order and the CNA entry deliberately avoids the bare
+        // "cna" token so continuing-education leads do not land on it.
+        $courseKeywords = [
+            'Certified Nursing Assistant (CNA)' => ['certified nursing assistant'],
+            'Home Health Aide (HHA)' => ['home health aide', 'hha'],
+            'BLS / CPR Certification' => ['basic life support', 'bls'],
+            'ACLS Certification' => ['advanced cardiovascular', 'acls'],
+            'Restorative Nursing Assistant (RNA)' => ['restorative', 'rna'],
+            'CNA Continuing Education (6 CEUs)' => ['continuing education', 'ceu'],
+        ];
+        $selCourse = trim((string) ($addOld['course'] ?? ''));
+        $leadCourse = trim((string) ($_GET['prefill_course'] ?? ''));
+        if ($selCourse === '' && $leadCourse !== '') {
+            $lc = mb_strtolower($leadCourse);
+            foreach ($courseKeywords as $opt => $keys) {
+                foreach ($keys as $kw) {
+                    if (str_contains($lc, $kw)) { $selCourse = $opt; break 2; }
+                }
+            }
+            // No match (e.g. "Not sure yet"): keep the lead's wording verbatim
+            // instead of silently defaulting to the first course.
+            if ($selCourse === '') {
+                $selCourse = $leadCourse;
+            }
+        }
+        $selStatus = (string) ($addOld['status'] ?? 'enrolled');
         ?>
-        <details class="card add-card" id="add" <?= $prefillOpen ? 'open' : '' ?>>
+        <details class="card add-card" id="add" <?= $addOpen ? 'open' : '' ?>>
           <summary>+ Add a student</summary>
           <form method="post" class="form-grid">
             <input type="hidden" name="action" value="student_add">
             <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
-            <label>Full name *<input type="text" name="name" required maxlength="120" value="<?= $prefill('name') ?>"></label>
-            <label>Mobile phone<input type="tel" name="mobile" maxlength="40" value="<?= $prefill('mobile') ?>"></label>
-            <label>Email<input type="email" name="email" maxlength="120" value="<?= $prefill('email') ?>"></label>
-            <label>Address<input type="text" name="address" maxlength="200" placeholder="Street, city, ZIP"></label>
+            <label>Full name *<input type="text" name="name" required maxlength="120" value="<?= $addVal('name') ?>"></label>
+            <label>Mobile phone<input type="tel" name="mobile" maxlength="40" value="<?= $addVal('mobile') ?>"></label>
+            <label>Email<input type="email" name="email" maxlength="120" value="<?= $addVal('email') ?>"></label>
+            <label>Address<input type="text" name="address" maxlength="200" placeholder="Street, city, ZIP" value="<?= $addVal('address') ?>"></label>
             <label>Course
               <select name="course">
-                <?php
-                $pc = (string) ($_GET['prefill_course'] ?? '');
-                foreach (STUDENT_COURSES as $c):
-                    // Match "Certified Nursing Assistant (CNA-100, $1,500)" from a lead
-                    // to the option "Certified Nursing Assistant (CNA)" by base name.
-                    $base = trim(explode('(', $c)[0]);
-                    $sel = $pc !== '' && $base !== '' && stripos($pc, $base) !== false;
-                ?>
-                  <option value="<?= h($c) ?>" <?= $sel ? 'selected' : '' ?>><?= h($c) ?></option>
+                <?php foreach (STUDENT_COURSES as $c): ?>
+                  <option value="<?= h($c) ?>" <?= $selCourse === $c ? 'selected' : '' ?>><?= h($c) ?></option>
                 <?php endforeach; ?>
+                <?php if ($selCourse !== '' && !in_array($selCourse, STUDENT_COURSES, true)): ?>
+                  <option value="<?= h($selCourse) ?>" selected><?= h($selCourse) ?></option>
+                <?php endif; ?>
               </select>
             </label>
             <label>Status
               <select name="status">
                 <?php foreach (STUDENT_STATUSES as $k => $label): ?>
-                  <option value="<?= $k ?>"><?= h($label) ?></option>
+                  <option value="<?= $k ?>" <?= $selStatus === $k ? 'selected' : '' ?>><?= h($label) ?></option>
                 <?php endforeach; ?>
               </select>
             </label>
-            <label>Start date<input type="date" name="start"></label>
-            <label>Duration<input type="text" name="duration" maxlength="80" placeholder="e.g. 6 weeks, or Jul 8 to Aug 15"></label>
-            <label class="span2">Notes<input type="text" name="notes" maxlength="500" placeholder="Anything worth remembering"></label>
+            <label>Start date<input type="date" name="start" value="<?= $addVal('start') ?>"></label>
+            <label>Duration<input type="text" name="duration" maxlength="80" placeholder="e.g. 6 weeks, or Jul 8 to Aug 15" value="<?= $addVal('duration') ?>"></label>
+            <label class="span2">Notes<input type="text" name="notes" maxlength="500" placeholder="Anything worth remembering" value="<?= $addVal('notes') ?>"></label>
             <div class="span2 form-actions"><button type="submit">Add student</button></div>
           </form>
         </details>
@@ -674,7 +771,7 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
           <button type="submit">Filter</button>
           <span class="toolbar-spacer"></span>
           <a class="btn-ghost" href="?view=students&amp;print=1<?= $sCourse !== 'all' ? '&amp;course=' . h(urlencode($sCourse)) : '' ?><?= $sQuery !== '' ? '&amp;q=' . h(urlencode($sQuery)) : '' ?>" target="_blank">Print roster</a>
-          <a class="btn-ghost" href="?action=students_csv">Export CSV</a>
+          <a class="btn-ghost" href="?action=students_csv<?= $sCourse !== 'all' ? '&amp;course=' . h(urlencode($sCourse)) : '' ?><?= $sQuery !== '' ? '&amp;q=' . h(urlencode($sQuery)) : '' ?>">Export CSV</a>
         </form>
 
         <?php if (!$shownStudents): ?>
