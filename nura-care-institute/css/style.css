@@ -1339,6 +1339,48 @@ img {
   color: var(--ink);
 }
 
+/* E-E-A-T byline and sources */
+.reviewed-line {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin: 1.1rem 0 0;
+  letter-spacing: 0.01em;
+}
+
+.reviewed-line a {
+  color: var(--slate);
+}
+
+.sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sources li {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.98rem;
+}
+
+.sources li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.sources a {
+  font-weight: 700;
+}
+
+.sources .src-org {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  margin-top: 3px;
+}
+
 /* ===================== Responsive ===================== */
 
 /* Desktop submenu opens on hover or keyboard focus */
