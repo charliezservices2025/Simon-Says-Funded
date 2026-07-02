@@ -1,5 +1,7 @@
-# Server-generated at runtime; unique per install
+# Secrets: never committed. secret.key is server-generated at runtime;
+# sms.key holds the Textbelt API key and is placed on the server by hand.
 php/secret.key
+php/sms.key
 
 # Runtime data (leads, analytics, rate limits, logs); keep only the .htaccess guard
 data/*

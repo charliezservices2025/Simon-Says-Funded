@@ -91,8 +91,9 @@
               <input type="text" id="name" name="name" autocomplete="name" required>
             </div>
             <div class="form-row">
-              <label for="phone">Phone number</label>
-              <input type="tel" id="phone" name="phone" autocomplete="tel" required>
+              <label for="phone">Mobile phone number</label>
+              <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(916) 555-0123" required>
+              <p class="hint" style="margin-top:6px;">Use a mobile number: we text you a confirmation the moment your request arrives.</p>
             </div>
           </div>
 
@@ -135,7 +136,7 @@
           </div>
 
           <button class="btn btn-primary btn-block" type="submit">Submit Enrollment Request</button>
-          <p class="form-note">We will never share your information. Submitting this form does not charge any fee or reserve a seat; our admissions team will follow up to confirm details and payment. This form uses a short human check so real inquiries, not automated spam, reach our team.</p>
+          <p class="form-note">We will never share your information. Submitting this form does not charge any fee or reserve a seat; our admissions team will follow up to confirm details and payment. By submitting, you agree to receive one confirmation text message plus a call, text, or email from our team about your request; message and data rates may apply. This form uses a short human check so real inquiries, not automated spam, reach our team.</p>
           <div id="enrollStatus" class="form-status" role="status"></div>
           <noscript>
             <div class="form-status" data-state="error" style="display:block;">Our enrollment form uses an anti-spam check that requires JavaScript. Please enable JavaScript in your browser, or call <a href="tel:+19165441256">(916) 544-1256</a> or email <a href="mailto:education@nuracareinstitute.com">education@nuracareinstitute.com</a> and we will help you directly.</div>

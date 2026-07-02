@@ -34,13 +34,27 @@ const NCI_MAIL_FROM = 'Nura Care Institute Website <no-reply@nuracareinstitute.c
 const NCI_ADMIN_URL = 'https://nuracareinstitute.com/admin/';
 
 /**
- * Optional SMS notifications. Email alerts are always sent; to add true text
- * messages, create a Twilio (or Textbelt) account, fill these in, and set
- * enabled to true. Without credentials this is skipped silently.
+ * Text message notifications via Textbelt (https://textbelt.com).
+ *
+ * The API key is read from php/sms.key, a one-line file that is blocked
+ * from the web and kept out of version control. SMS enables itself when
+ * a key is present and disables itself silently when the file is empty
+ * or missing; email alerts always send either way.
+ *
+ * To top up or replace the key: buy credit at textbelt.com/purchase and
+ * paste the new key into php/sms.key (nothing else on the line).
+ * To check remaining credit: https://textbelt.com/quota/YOUR_KEY
  */
-const NCI_SMS = [
-    'enabled' => false,
-    'provider' => 'textbelt',       // https://textbelt.com : POST phone/message/key
-    'key' => '',
-    'numbers' => ['+19165441256'],
-];
+$nciSmsKey = is_readable(__DIR__ . '/sms.key')
+    ? trim((string) file_get_contents(__DIR__ . '/sms.key'))
+    : '';
+define('NCI_SMS', [
+    'enabled' => $nciSmsKey !== '',
+    'provider' => 'textbelt',
+    'key' => $nciSmsKey,
+    // Everyone here is texted the moment a booking arrives.
+    'numbers' => [
+        '+19165441256',             // Tynesha Zacarias
+    ],
+]);
+unset($nciSmsKey);

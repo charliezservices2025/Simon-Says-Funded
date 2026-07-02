@@ -424,11 +424,16 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
         $freePct = ($free && $total) ? round(100 * $free / $total) : null;
         $mailLog = @file_exists(store_path('mail.log')) ? trim((string) @file_get_contents(store_path('mail.log'))) : '';
         $mailFails = $mailLog === '' ? 0 : substr_count($mailLog, "\n") + 1;
+        $smsLog = @file_exists(store_path('sms.log')) ? trim((string) @file_get_contents(store_path('sms.log'))) : '';
+        $smsLines = $smsLog === '' ? [] : explode("\n", $smsLog);
+        $smsFails = count(array_filter($smsLines, fn($l) => str_contains($l, 'FAILED')));
+        $smsLast = $smsLines ? substr((string) end($smsLines), 0, 90) : '';
         $checks = [
             ['Web server', 'ok', 'Serving pages (you are reading one).'],
             ['PHP ' . PHP_VERSION, version_compare(PHP_VERSION, '8.0', '>=') ? 'ok' : 'warn', 'Version ' . PHP_VERSION],
             ['Data storage', is_writable(NCI_DATA_DIR) ? 'ok' : 'err', is_writable(NCI_DATA_DIR) ? 'Leads and analytics are being saved.' : 'data/ directory is NOT writable.'],
             ['Email function', !function_exists('mail') ? 'err' : ($mailFails ? 'warn' : 'ok'), function_exists('mail') ? ($mailFails ? $mailFails . ' delivery failures logged; check data/mail.log.' : 'Available; no delivery failures logged.') : 'mail() missing.'],
+            ['Text message alerts', NCI_SMS['enabled'] ? ($smsFails ? 'warn' : 'ok') : 'warn', NCI_SMS['enabled'] ? (count(NCI_SMS['numbers']) . ' number(s) on alert list' . ($smsFails ? '; ' . $smsFails . ' failures logged, check data/sms.log.' : ($smsLast !== '' ? '; last: ' . $smsLast : '; none sent yet.'))) : 'Disabled: add the Textbelt key to php/sms.key.'],
             ['HTTPS', $secure ? 'ok' : 'warn', $secure ? 'Connection is encrypted.' : 'Not detected on this request.'],
             ['Disk space', ($freePct === null || $freePct > 10) ? 'ok' : 'warn', $freePct === null ? 'Not reported by host.' : $freePct . '% free.'],
             ['Latest visitor', 'info', $lastVisitTs ? fmt_ago($lastVisitTs) : 'No visits recorded yet.'],

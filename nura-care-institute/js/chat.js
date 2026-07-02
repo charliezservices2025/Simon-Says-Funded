@@ -124,7 +124,7 @@
     },
     {
       k: /\b(enroll|book|booking|sign ?up|register|reserve|start|apply)\b/i,
-      a: "Booking is easy: fill out the " + LINK("/enroll/", "enrollment form") + " and our admissions team will follow up within one business day with schedule and start date. Submitting the form does not charge anything."
+      a: "Booking is easy: fill out the " + LINK("/enroll/", "enrollment form") + " and our admissions team will follow up within one business day with schedule and start date. Enter your mobile number and you get an instant text confirming we received your request. Submitting the form does not charge anything."
     },
     {
       k: /\b(zelle|pay|payment|deposit|money|paypal|card|cash)\b/i,

@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/antispam.php';
 require __DIR__ . '/store.php';
+require __DIR__ . '/sms.php';
 
 const SITE_NAME = 'Nura Care Institute';
 
@@ -149,6 +150,29 @@ if ($leadId === 0) {
     respond(false, 'We could not save your request right now. Please call us at (916) 544-1256.', 500);
 }
 
+/* ------------------------------------------------------------------
+   Respond to the visitor first, then deliver notifications.
+   The booking is already saved above, so nothing below can lose it,
+   and the visitor never waits on email or text message delivery.
+   ------------------------------------------------------------------ */
+if ($wantsJson) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => true, 'message' => 'Thank you. Your enrollment request has been received.']);
+} else {
+    header('Location: /thank-you/', true, 303);
+}
+if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();       // PHP-FPM
+} elseif (function_exists('litespeed_finish_request')) {
+    litespeed_finish_request();     // LiteSpeed, which Hostinger runs
+} else {
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+    @flush();
+}
+ignore_user_abort(true);
+
 $messageBody = $message !== '' ? wordwrap($message, 70) : '(none provided)';
 
 $body = "New booking request #{$leadId} from the Nura Care Institute website\n\n"
@@ -176,23 +200,21 @@ foreach (NCI_NOTIFY_EMAILS as $to) {
     }
 }
 
-// Optional SMS alert (requires credentials in config.php; skipped otherwise).
-if (NCI_SMS['enabled'] && NCI_SMS['key'] !== '' && function_exists('curl_init')) {
-    foreach (NCI_SMS['numbers'] as $num) {
-        $ch = curl_init('https://textbelt.com/text');
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,
-            CURLOPT_POSTFIELDS => http_build_query([
-                'phone' => $num,
-                'message' => "New booking: {$course} from {$name}, {$phone}. Details: " . NCI_ADMIN_URL,
-                'key' => NCI_SMS['key'],
-            ]),
-        ]);
-        curl_exec($ch);
-        curl_close($ch);
-    }
+// Text alert to staff: every number configured in config.php.
+$staffText = "Nura Care Institute booking #{$leadId}: {$course} from {$name}, {$phone}"
+    . ($preferredStart !== '' ? ", prefers {$preferredStart}" : '')
+    . '. Manage: ' . NCI_ADMIN_URL . '?view=leads';
+foreach (NCI_SMS['numbers'] as $num) {
+    sms_send($num, $staffText);
 }
 
-respond(true, 'Thank you. Your enrollment request has been received.');
+// Confirmation text to the client, when they gave a valid US mobile number.
+$clientNumber = sms_normalize_us($phone);
+if ($clientNumber !== '') {
+    $firstName = ucfirst(strtolower(strtok($name, ' ') ?: $name));
+    sms_send($clientNumber,
+        "Nura Care Institute: thank you, {$firstName}! We received your request for {$course}. "
+        . 'Our admissions team will reach out within one business day. Questions? Call (916) 544-1256.');
+}
+
+exit;
