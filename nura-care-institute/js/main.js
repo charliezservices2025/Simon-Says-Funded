@@ -18,6 +18,24 @@
     heroVideo.removeAttribute("autoplay");
     if (typeof heroVideo.pause === "function") heroVideo.pause();
     heroVideo.parentNode.removeChild(heroVideo);
+    heroVideo = null;
+  }
+
+  // Start the hero video on the first human interaction. Until then the
+  // poster frame shows, which keeps initial paint fast and light.
+  if (heroVideo) {
+    var startHero = function () {
+      ["scroll", "pointermove", "touchstart", "keydown", "click"].forEach(function (ev) {
+        window.removeEventListener(ev, startHero);
+      });
+      if (heroVideo.isConnected && typeof heroVideo.play === "function") {
+        var p = heroVideo.play();
+        if (p && typeof p.catch === "function") p.catch(function () {});
+      }
+    };
+    ["scroll", "pointermove", "touchstart", "keydown", "click"].forEach(function (ev) {
+      window.addEventListener(ev, startHero, { once: true, passive: true });
+    });
   }
 
   // Mobile nav toggle

@@ -1,3 +1,12 @@
+/* Self-hosted fonts (latin subsets), font-display: swap */
+@font-face { font-family: "Roboto Slab"; font-style: normal; font-weight: 400; font-display: swap; src: url("/assets/fonts/roboto-slab-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Roboto Slab"; font-style: normal; font-weight: 700; font-display: swap; src: url("/assets/fonts/roboto-slab-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Public Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("/assets/fonts/public-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Public Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("/assets/fonts/public-sans-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Public Sans"; font-style: normal; font-weight: 700; font-display: swap; src: url("/assets/fonts/public-sans-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("/assets/fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 600; font-display: swap; src: url("/assets/fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2"); }
+
 /* Nura Care Institute -- design system
    Palette: Ink (charcoal), Slate/Sky (logo blue), Ember (logo coral), Chart (cool paper)
    Display: Roboto Slab. Body: Public Sans. Data/code: IBM Plex Mono. */
@@ -9,6 +18,8 @@
   --sky: #7e94bc;
   --sky-pale: #e7ebf3;
   --ember: #df5430;
+  --ember-text: #bf3f1d;
+  --ember-bright: #ff8a5c;
   --ember-dark: #b8421f;
   --chart: #f5f6f8;
   --white: #ffffff;
@@ -90,7 +101,7 @@ a {
 }
 
 a:hover {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 a:focus-visible,
@@ -118,7 +129,7 @@ img {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.78rem;
-  color: var(--ember);
+  color: var(--ember-text);
   font-weight: 600;
   display: inline-block;
   margin-bottom: 0.9em;
@@ -196,7 +207,7 @@ img {
 }
 
 .topbar strong {
-  color: var(--ember);
+  color: var(--ember-bright);
 }
 
 /* Header / nav */
@@ -244,8 +255,12 @@ img {
   font-weight: 500;
   font-size: 0.62rem;
   letter-spacing: 0.1em;
-  color: var(--ember);
+  color: var(--ember-text);
   text-transform: uppercase;
+}
+
+.site-footer .brand-text span {
+  color: var(--ember-bright);
 }
 
 .nav-links {
@@ -266,11 +281,11 @@ img {
 
 .nav-links a:hover,
 .nav-links a[aria-current="page"] {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .nav-cta {
-  background: var(--ember);
+  background: var(--ember-text);
   color: var(--white) !important;
   padding: 10px 20px;
   border-radius: var(--radius);
@@ -278,7 +293,7 @@ img {
 }
 
 .nav-cta:hover {
-  background: var(--ember-dark);
+  background: #a63517;
   color: var(--white) !important;
 }
 
@@ -363,12 +378,12 @@ img {
 }
 
 .btn-primary {
-  background: var(--ember);
+  background: var(--ember-text);
   color: var(--white);
 }
 
 .btn-primary:hover {
-  background: var(--ember-dark);
+  background: #a63517;
   color: var(--white);
 }
 
@@ -740,7 +755,7 @@ img {
 
 .statement em {
   font-style: normal;
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .checklist {
@@ -794,7 +809,7 @@ img {
 
 /* CTA band */
 .cta-band {
-  background: var(--ember);
+  background: var(--ember-text);
   color: var(--white);
   padding: 56px 0;
   text-align: center;
@@ -831,7 +846,8 @@ img {
   gap: 40px;
 }
 
-.footer-grid h4 {
+.footer-grid h4,
+.footer-grid .footer-h {
   color: var(--white);
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -857,7 +873,7 @@ img {
 }
 
 .footer-grid a:hover {
-  color: var(--ember);
+  color: var(--ember-bright);
 }
 
 .footer-brand p {
@@ -883,7 +899,7 @@ img {
 }
 
 .footer-bottom a:hover {
-  color: var(--ember);
+  color: var(--ember-bright);
 }
 
 /* Page hero (interior pages) */
@@ -1233,7 +1249,7 @@ img {
 }
 
 .has-submenu:hover .submenu-toggle {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .submenu {
@@ -1271,7 +1287,7 @@ img {
 
 .submenu a:hover {
   background: var(--sky-pale);
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .submenu[data-open="true"] {
@@ -1353,7 +1369,7 @@ img {
   margin-top: 10px;
   font-weight: 700;
   font-size: 0.9rem;
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 /* Numbered process steps */
