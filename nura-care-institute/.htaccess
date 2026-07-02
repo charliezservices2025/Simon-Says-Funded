@@ -24,6 +24,17 @@ RewriteRule ^courses/cna-inservice-hours\.html$ /courses/cna-inservice-hours/ [R
 
 ErrorDocument 404 /404.html
 
+# Anti-spam secret material must never be web-readable
+<FilesMatch "\.key$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
   Header set X-Frame-Options "SAMEORIGIN"

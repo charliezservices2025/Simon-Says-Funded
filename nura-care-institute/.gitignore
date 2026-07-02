@@ -1,0 +1,2 @@
+# Server-generated at runtime; unique per install
+php/secret.key

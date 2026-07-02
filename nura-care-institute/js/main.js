@@ -58,6 +58,37 @@
     var statusEl = document.getElementById("enrollStatus");
     var submitBtn = form.querySelector('button[type="submit"]');
 
+    // Anti-spam human check: fetch a signed challenge from the server and
+    // show the verification question. The server rejects submissions that
+    // lack a valid, correctly answered, human-paced challenge.
+    var checkRow = document.getElementById("humanCheckRow");
+    var questionEl = document.getElementById("humanQuestion");
+    var answerEl = document.getElementById("human_answer");
+
+    function loadChallenge() {
+      if (!checkRow || !questionEl || !answerEl) return;
+      fetch("/php/challenge.php", { headers: { Accept: "application/json" } })
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (c) {
+          if (!c || !c.sig || !c.q) throw new Error("bad challenge");
+          document.getElementById("challengeTs").value = c.ts;
+          document.getElementById("challengeNonce").value = c.nonce;
+          document.getElementById("challengeSig").value = c.sig;
+          questionEl.textContent = c.q;
+          answerEl.value = "";
+          answerEl.required = true;
+          checkRow.hidden = false;
+        })
+        .catch(function () {
+          statusEl.setAttribute("data-state", "error");
+          statusEl.textContent =
+            "Our spam check could not load. Please refresh the page, or call (916) 544-1256.";
+        });
+    }
+    loadChallenge();
+
     // Non-JS fallback redirected back here after a server-side error.
     if (window.location.search.indexOf("error=1") !== -1) {
       statusEl.setAttribute("data-state", "error");
@@ -106,6 +137,10 @@
             statusEl.textContent =
               (json && json.message) ||
               "Something went wrong sending your request. Please call us at (916) 544-1256.";
+            // The server asked for a fresh spam-check question.
+            if (json && json.code === "challenge") {
+              loadChallenge();
+            }
           }
         })
         .catch(function () {

@@ -77,6 +77,8 @@
           <div class="form-row honeypot-field" aria-hidden="true">
             <label for="website">Leave blank</label>
             <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+            <label for="company">Leave blank</label>
+            <input type="text" id="company" name="company" tabindex="-1" autocomplete="off">
           </div>
 
           <div class="form-grid-2">
@@ -117,12 +119,23 @@
 
           <div class="form-row">
             <label for="message">Anything we should know? <span class="hint">(optional)</span></label>
-            <textarea id="message" name="message" rows="4" placeholder="Questions about schedule, prerequisites, or payment plans"></textarea>
+            <textarea id="message" name="message" rows="4" maxlength="2000" placeholder="Questions about schedule, prerequisites, or payment plans"></textarea>
+          </div>
+
+          <div class="form-row" id="humanCheckRow" hidden>
+            <label for="human_answer">Quick spam check: what is <span id="humanQuestion">loading</span>?</label>
+            <input type="text" id="human_answer" name="human_answer" inputmode="numeric" autocomplete="off">
+            <input type="hidden" name="challenge_ts" id="challengeTs">
+            <input type="hidden" name="challenge_nonce" id="challengeNonce">
+            <input type="hidden" name="challenge_sig" id="challengeSig">
           </div>
 
           <button class="btn btn-primary btn-block" type="submit">Submit Enrollment Request</button>
-          <p class="form-note">We will never share your information. Submitting this form does not charge any fee or reserve a seat; our admissions team will follow up to confirm details and payment.</p>
+          <p class="form-note">We will never share your information. Submitting this form does not charge any fee or reserve a seat; our admissions team will follow up to confirm details and payment. This form uses a short human check so real inquiries, not automated spam, reach our team.</p>
           <div id="enrollStatus" class="form-status" role="status"></div>
+          <noscript>
+            <div class="form-status" data-state="error" style="display:block;">Our enrollment form uses an anti-spam check that requires JavaScript. Please enable JavaScript in your browser, or call <a href="tel:+19165441256">(916) 544-1256</a> or email <a href="mailto:education@nuracareinstitute.com">education@nuracareinstitute.com</a> and we will help you directly.</div>
+          </noscript>
         </form>
       </div>
 
