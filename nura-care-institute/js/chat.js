@@ -132,7 +132,7 @@
     },
     {
       k: /\b(tynesha|instructor|teacher|who teaches|staff)\b/i,
-      a: "Instruction is led by Tynesha Zacarias, our Lead Instructor, who works directly with students through classroom and hands-on clinical practice. More on the " + LINK("/about/", "about page") + "."
+      a: "Instruction is led by Tynesha Zacarias, a Registered Nurse and our Lead Instructor, who works directly with students through classroom and hands-on clinical practice. More on the " + LINK("/about/", "about page") + "."
     },
     {
       k: /\b(job|career|employment|work|hire|salary)\b/i,
