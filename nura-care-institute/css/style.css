@@ -1754,11 +1754,57 @@ img {
   }
 }
 
-@media (max-width: 480px) {
+/* Phones: a swipeable gallery with big, snap-aligned cards; the next
+   card peeks in from the edge so the swipe affordance is obvious. */
+@media (max-width: 700px) {
   .moments-grid {
-    gap: 10px;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 78%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    padding: 4px 4px 16px;
+    margin: 0 -4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+    -webkit-overflow-scrolling: touch;
   }
   .moment {
-    border-radius: 10px;
+    scroll-snap-align: center;
+    border-radius: 12px;
   }
+}
+
+/* Footer compliance bar */
+.footer-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin-top: 44px;
+  padding-top: 20px;
+  border-top: 1px solid #34383f;
+}
+
+.footer-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #9aa0aa;
+}
+
+.footer-trust svg {
+  color: var(--ember-bright);
+  flex: none;
+}
+
+.footer-trust + .footer-bottom {
+  margin-top: 16px;
+  border-top: 0;
+  padding-top: 0;
 }
