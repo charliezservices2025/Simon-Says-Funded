@@ -1380,7 +1380,6 @@ img {
   border-radius: 12px;
   box-shadow: var(--shadow);
   padding: 14px;
-  transform: rotate(-1.2deg);
 }
 
 .cert-image img {
@@ -1689,9 +1688,6 @@ img {
   }
   .hero {
     padding: 40px 0 52px;
-  }
-  .cert-image {
-    transform: none;
   }
   .form-grid-2 {
     grid-template-columns: 1fr;
