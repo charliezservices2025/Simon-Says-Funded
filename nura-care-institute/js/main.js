@@ -210,4 +210,27 @@
       });
     }
   } catch (e) { /* analytics must never break the page */ }
+
+  // Homepage video stories: play each clip only while it is on screen, so we
+  // never download or run four videos at once. Reduced-motion users get the
+  // still first frame and no autoplay.
+  var storyVideos = Array.prototype.slice.call(document.querySelectorAll(".story-video"));
+  if (storyVideos.length) {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce && "IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var v = entry.target;
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            if (v.preload !== "auto") v.preload = "auto";
+            var p = v.play();
+            if (p && typeof p.catch === "function") p.catch(function () {});
+          } else if (typeof v.pause === "function") {
+            v.pause();
+          }
+        });
+      }, { threshold: [0, 0.5, 1] });
+      storyVideos.forEach(function (v) { io.observe(v); });
+    }
+  }
 })();

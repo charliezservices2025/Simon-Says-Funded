@@ -2007,3 +2007,96 @@ img {
     padding: 24px 20px;
   }
 }
+
+/* ============================================================
+   Homepage video stories (branded b-roll, UGC style)
+   ============================================================ */
+.stories .section-head { max-width: 760px; }
+.stories-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+.story {
+  position: relative;
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  aspect-ratio: 9 / 16;
+  background: #0d1b2a;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
+  isolation: isolate;
+}
+.story video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.story-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(6, 12, 20, 0.74) 0%, rgba(6, 12, 20, 0.16) 44%, rgba(6, 12, 20, 0) 70%);
+}
+.story-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.story-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 16px 16px 18px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.18rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+}
+.stories-cta { margin-top: 1.75rem; }
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .stories-row { gap: 0.75rem; }
+  .story-cap { font-size: 1rem; padding: 14px 13px 15px; }
+  .story-badge { font-size: 0.64rem; }
+}
+/* Mobile: horizontal swipe carousel */
+@media (max-width: 680px) {
+  .stories-row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 76%;
+    gap: 0.85rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding: 0 16px;
+    padding-bottom: 0.4rem;
+  }
+  .story { scroll-snap-align: center; }
+  .stories-row::-webkit-scrollbar { display: none; }
+  .story-cap { font-size: 1.1rem; }
+}
