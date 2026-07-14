@@ -51,8 +51,8 @@
     "Here is everything we offer:<br>" +
     "&bull; Certified Nursing Assistant (CNA): $1,500<br>" +
     "&bull; Home Health Aide (HHA): $575<br>" +
-    "&bull; AHA Basic Life Support (BLS): $55<br>" +
-    "&bull; AHA Advanced Cardiovascular Life Support (ACLS): $120<br>" +
+    "&bull; AHA Basic Life Support (BLS): $79<br>" +
+    "&bull; AHA Advanced Cardiovascular Life Support (ACLS): $209<br>" +
     "&bull; Restorative Nursing Assistant (RNA): $250<br>" +
     "&bull; CNA Continuing Education: 6 CEUs for $50<br>" +
     "See details on the " + LINK("/courses/", "courses page") + ".";
@@ -84,11 +84,11 @@
     },
     {
       k: /\b(acls|advanced cardio)/i,
-      a: "AHA Advanced Cardiovascular Life Support (ACLS) is $120. A current BLS Provider card is recommended before starting. Details: " + LINK("/courses/acls-certification/", "ACLS page") + "."
+      a: "AHA Advanced Cardiovascular Life Support (ACLS) is $209. A current BLS Provider card is recommended before starting. Details: " + LINK("/courses/acls-certification/", "ACLS page") + "."
     },
     {
       k: /\b(bls|cpr|basic life support|aed)\b/i,
-      a: "Our AHA Basic Life Support (BLS) course is $55 and covers high quality CPR, AED use, and team response. You get an AHA BLS Provider card, generally valid two years. We also bring BLS to your workplace anywhere in our service area. Details: " + LINK("/courses/bls-cpr-certification/", "BLS page") + "."
+      a: "Our AHA Basic Life Support (BLS) course is $79 and covers high quality CPR, AED use, and team response. You get an AHA BLS Provider card, generally valid two years. We also bring BLS to your workplace anywhere in our service area. Details: " + LINK("/courses/bls-cpr-certification/", "BLS page") + "."
     },
     {
       k: /\b(ceu|continuing education|in.?service|renew|renewal|expir)/i,
