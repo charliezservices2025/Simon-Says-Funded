@@ -22,6 +22,8 @@
 <link rel="preload" href="/assets/fonts/roboto-slab-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/public-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net">
+<link rel="dns-prefetch" href="https://d8j0ntlcm91z4.cloudfront.net">
 <link rel="stylesheet" href="/css/style.min.css">
 <script type="application/ld+json">
 {
@@ -29,13 +31,15 @@
   "@type": "WebSite",
   "name": "Nura Care Institute",
   "alternateName": "Nura Care Institute CPR and CNA Training",
-  "url": "https://nuracareinstitute.com/"
+  "url": "https://nuracareinstitute.com/",
+  "publisher": {"@id": "https://nuracareinstitute.com/#organization"}
 }
 </script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": ["EducationalOrganization", "LocalBusiness"],
+  "@id": "https://nuracareinstitute.com/#organization",
   "name": "Nura Care Institute",
   "url": "https://nuracareinstitute.com/",
   "sameAs": [
@@ -125,7 +129,7 @@
 <header class="site-header">
   <nav class="nav container" aria-label="Primary">
     <a class="brand" href="/">
-      <img src="/assets/logo-420.webp" alt="Nura Care Institute. Learn. Care. Empower." width="419" height="80">
+      <img src="/assets/logo-420.webp" alt="Nura Care Institute. Learn. Care. Empower." width="419" height="80" decoding="async">
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primaryNav" id="navToggle" aria-label="Open menu">
       <span></span>
@@ -210,7 +214,7 @@
       </div>
       <div class="stories-row">
         <figure class="story">
-          <video class="story-video" muted loop playsinline preload="metadata" aria-label="Students practicing CPR chest compressions on training manikins in the classroom">
+          <video class="story-video" muted loop playsinline preload="none" aria-label="Students practicing CPR chest compressions on training manikins in the classroom">
             <source src="https://d8j0ntlcm91z4.cloudfront.net/user_3Euem5LNzYDcu2QZxsMKgj9lFY1/hf_20260714_224906_f68e57ba-ddf9-485f-88e8-79746a466b4d.mp4" type="video/mp4">
           </video>
           <span class="story-scrim"></span>
@@ -218,7 +222,7 @@
           <figcaption class="story-cap">Hands-on CPR and BLS practice</figcaption>
         </figure>
         <figure class="story">
-          <video class="story-video" muted loop playsinline preload="metadata" aria-label="An instructor demonstrating an AED defibrillator and bag-mask on a training manikin to students">
+          <video class="story-video" muted loop playsinline preload="none" aria-label="An instructor demonstrating an AED defibrillator and bag-mask on a training manikin to students">
             <source src="https://d8j0ntlcm91z4.cloudfront.net/user_3Euem5LNzYDcu2QZxsMKgj9lFY1/hf_20260714_224917_42af4c3a-2a2b-4a53-88e3-01488a48a6ec.mp4" type="video/mp4">
           </video>
           <span class="story-scrim"></span>
@@ -226,7 +230,7 @@
           <figcaption class="story-cap">Learn AED and rescue skills</figcaption>
         </figure>
         <figure class="story">
-          <video class="story-video" muted loop playsinline preload="metadata" aria-label="A nursing assistant student practicing patient-care skills and taking blood pressure in the skills lab">
+          <video class="story-video" muted loop playsinline preload="none" aria-label="A nursing assistant student practicing patient-care skills and taking blood pressure in the skills lab">
             <source src="https://d8j0ntlcm91z4.cloudfront.net/user_3Euem5LNzYDcu2QZxsMKgj9lFY1/hf_20260714_224928_d89bac72-0ddf-4520-aa64-cdfc2a31f6ff.mp4" type="video/mp4">
           </video>
           <span class="story-scrim"></span>
@@ -234,7 +238,7 @@
           <figcaption class="story-cap">Real CNA skills training</figcaption>
         </figure>
         <figure class="story">
-          <video class="story-video" muted loop playsinline preload="metadata" aria-label="Graduates in scrubs smiling and holding their certificates of completion in the classroom">
+          <video class="story-video" muted loop playsinline preload="none" aria-label="Graduates in scrubs smiling and holding their certificates of completion in the classroom">
             <source src="https://d8j0ntlcm91z4.cloudfront.net/user_3Euem5LNzYDcu2QZxsMKgj9lFY1/hf_20260714_224933_8fd3140c-f092-46ff-88f3-3f365a4886e2.mp4" type="video/mp4">
           </video>
           <span class="story-scrim"></span>
@@ -260,7 +264,7 @@
         <a class="catalog-row" href="/courses/certified-nursing-assistant/">
           <span class="catalog-code">CNA-100</span>
           <span>
-            <span class="catalog-name">Certified Nursing Assistant</span>
+            <h3 class="catalog-name">Certified Nursing Assistant</h3>
             <p class="catalog-desc">Classroom instruction plus supervised clinical practice toward your California CNA certification.</p>
           </span>
           <span class="catalog-price">$1,500<small>program</small></span>
@@ -269,7 +273,7 @@
         <a class="catalog-row" href="/courses/home-health-aide/">
           <span class="catalog-code">HHA-100</span>
           <span>
-            <span class="catalog-name">Home Health Aide</span>
+            <h3 class="catalog-name">Home Health Aide</h3>
             <p class="catalog-desc">In-home care skills for active CNAs: personal care, mobility support, and safety. Requires CNA certification and a BLS card.</p>
           </span>
           <span class="catalog-price">$575<small>program</small></span>
@@ -278,7 +282,7 @@
         <a class="catalog-row" href="/courses/bls-cpr-certification/">
           <span class="catalog-code">BLS-CPR</span>
           <span>
-            <span class="catalog-name">AHA Basic Life Support (BLS)</span>
+            <h3 class="catalog-name">AHA Basic Life Support (BLS)</h3>
             <p class="catalog-desc">American Heart Association BLS Provider course for healthcare workers and caregivers.</p>
           </span>
           <span class="catalog-price">$79<small>course</small></span>
@@ -287,7 +291,7 @@
         <a class="catalog-row" href="/courses/acls-certification/">
           <span class="catalog-code">ACLS-100</span>
           <span>
-            <span class="catalog-name">AHA Advanced Cardiovascular Life Support (ACLS)</span>
+            <h3 class="catalog-name">AHA Advanced Cardiovascular Life Support (ACLS)</h3>
             <p class="catalog-desc">Advanced cardiac arrest and emergency response skills for clinical providers.</p>
           </span>
           <span class="catalog-price">$209<small>course</small></span>
@@ -296,7 +300,7 @@
         <a class="catalog-row" href="/courses/restorative-nursing-assistant/">
           <span class="catalog-code">RNA-100</span>
           <span>
-            <span class="catalog-name">Restorative Nursing Assistant (RNA)</span>
+            <h3 class="catalog-name">Restorative Nursing Assistant (RNA)</h3>
             <p class="catalog-desc">Restorative care training for active CNAs who hold a current BLS card.</p>
           </span>
           <span class="catalog-price">$250<small>course</small></span>
@@ -305,7 +309,7 @@
         <a class="catalog-row" href="/courses/cna-inservice-hours/">
           <span class="catalog-code">CEU-6</span>
           <span>
-            <span class="catalog-name">CNA Continuing Education (6 CEUs)</span>
+            <h3 class="catalog-name">CNA Continuing Education (6 CEUs)</h3>
             <p class="catalog-desc">Six continuing education units toward the in-service hours active CNAs need to keep their certification current.</p>
           </span>
           <span class="catalog-price">$50<small>6 CEUs</small></span>
@@ -318,7 +322,7 @@
   <section class="section section--chart">
     <div class="container split">
       <div>
-        <span class="eyebrow">Why train here</span>
+        <h2 class="eyebrow">Why train at Nura Care Institute</h2>
         <p class="statement">Nura Care Institute is built around one idea: you learn caregiving by <em>doing</em> it, in small classes, with an instructor who is still working in the field.</p>
         <div class="instructor" style="margin-top:2.4rem;">
           <img class="avatar-badge" src="/assets/tynesha-280.webp" alt="Tynesha Zacarias, Registered Nurse and Lead Instructor at Nura Care Institute" width="140" height="140" loading="lazy" decoding="async">
@@ -405,6 +409,43 @@
         </div>
       </div>
       <p style="margin-top:1.5rem;"><a href="/faq/">See all frequently asked questions &rarr;</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">From our blog</span>
+        <h2>CNA and healthcare career guides</h2>
+        <p>Straight answers from our Registered Nurse instructor on getting certified and building a healthcare career in the Sacramento region.</p>
+      </div>
+      <div class="blog-grid">
+        <article class="post-card">
+          <div class="post-card-body">
+            <span class="post-cat">Getting Started</span>
+            <h3><a href="/blog/how-to-become-a-cna-in-california/">How to Become a CNA in California</a></h3>
+            <p>Every step to become a CNA in California in 2026: eligibility, approved training, Live Scan, the state exam, and the registry.</p>
+            <span class="post-meta">8 min read</span>
+          </div>
+        </article>
+        <article class="post-card">
+          <div class="post-card-body">
+            <span class="post-cat">Costs</span>
+            <h3><a href="/blog/cna-training-cost-california/">What CNA Training Costs in California</a></h3>
+            <p>A clear breakdown of CNA training cost in California: tuition ranges, hidden fees, financing, and whether it is worth it.</p>
+            <span class="post-meta">8 min read</span>
+          </div>
+        </article>
+        <article class="post-card">
+          <div class="post-card-body">
+            <span class="post-cat">Certification</span>
+            <h3><a href="/blog/bls-vs-acls-certification-guide/">BLS vs ACLS: Which Do You Need?</a></h3>
+            <p>What each AHA course covers, who needs which, card validity, and how onsite team training works across Northern California.</p>
+            <span class="post-meta">7 min read</span>
+          </div>
+        </article>
+      </div>
+      <p style="margin-top:1.5rem;"><a href="/blog/">Read more on the blog &rarr;</a></p>
     </div>
   </section>
 
@@ -532,7 +573,7 @@
           <li>9198 Greenback Lane, Suite 108<br>Orangevale, CA 95662</li>
           <li><a href="tel:+19165441256">(916) 544-1256</a></li>
           <li><a href="mailto:education@nuracareinstitute.com">education@nuracareinstitute.com</a></li>
-          <li>Mon&ndash;Fri, 8:30am&ndash;5:00pm PST</li>
+          <li>Mon-Fri, 8:30am-5:00pm PST</li>
         </ul>
       </div>
     </div>
@@ -548,7 +589,7 @@
   </div>
 </footer>
 
-<script src="/js/main.min.js"></script>
+<script src="/js/main.min.js" defer></script>
 <script src="/js/chat.min.js" defer></script>
 </body>
 </html>

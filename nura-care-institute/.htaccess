@@ -1,15 +1,14 @@
 RewriteEngine On
 
-# Force HTTPS
+# Canonicalize scheme and host in a single 301 hop: force HTTPS and non-www
+RewriteCond %{HTTP_HOST} ^www\.nuracareinstitute\.com$ [NC,OR]
 RewriteCond %{HTTPS} off
-RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# Canonicalize to the non-www host
-RewriteCond %{HTTP_HOST} ^www\.nuracareinstitute\.com$ [NC]
 RewriteRule ^(.*)$ https://nuracareinstitute.com/$1 [L,R=301]
 
 # Old .html URLs redirect permanently to the current clean paths
 RewriteRule ^index\.html$ / [R=301,L]
+# Any nested index.html redirects to its clean directory URL
+RewriteRule ^(.+)/index\.html$ /$1/ [R=301,L]
 RewriteRule ^about\.html$ /about/ [R=301,L]
 RewriteRule ^faq\.html$ /faq/ [R=301,L]
 RewriteRule ^enroll\.html$ /enroll/ [R=301,L]
@@ -42,6 +41,7 @@ RewriteRule ^data(/|$) - [F,L]
   Header set X-Content-Type-Options "nosniff"
   Header set X-Frame-Options "SAMEORIGIN"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 AddType font/woff2 .woff2

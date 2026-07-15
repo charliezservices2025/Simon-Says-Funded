@@ -1134,7 +1134,12 @@ img {
 .faq-a {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.25s ease;
+  visibility: hidden;
+  transition: max-height 0.25s ease, visibility 0s 0.25s;
+}
+.faq-item[data-open="true"] .faq-a {
+  visibility: visible;
+  transition: max-height 0.25s ease, visibility 0s 0s;
 }
 
 .faq-a-inner {
@@ -1430,6 +1435,11 @@ img {
   font-weight: 700;
   font-size: 1.25rem;
   color: var(--ink);
+  margin: 0 0 2px;
+}
+/* Eyebrow kicker promoted to a heading keeps its inline-kicker look */
+h2.eyebrow {
+  margin-top: 0;
 }
 
 .area-card-county {

@@ -212,12 +212,23 @@
   } catch (e) { /* analytics must never break the page */ }
 
   // Homepage video stories: play each clip only while it is on screen, so we
-  // never download or run four videos at once. Reduced-motion users get the
-  // still first frame and no autoplay.
+  // never download or run four videos at once. Reduced-motion users are never
+  // auto-played; instead we fetch just the first frame and seek to it so they
+  // see a still image of the scene rather than an empty box.
   var storyVideos = Array.prototype.slice.call(document.querySelectorAll(".story-video"));
   if (storyVideos.length) {
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!reduce && "IntersectionObserver" in window) {
+    if (reduce) {
+      storyVideos.forEach(function (v) {
+        try {
+          v.preload = "metadata";
+          v.load();
+          v.addEventListener("loadedmetadata", function () {
+            try { v.currentTime = 0.05; } catch (e) {}
+          }, { once: true });
+        } catch (e) {}
+      });
+    } else if ("IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           var v = entry.target;
