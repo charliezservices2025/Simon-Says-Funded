@@ -1,0 +1,68 @@
+/* =====================================================================
+   Thrive Downtown — Accessibility contrast overrides (WCAG 2.1 AA)
+   ---------------------------------------------------------------------
+   WHERE TO PASTE: Appearance → Customize → Additional CSS (easiest to revert)
+     OR WPCode CSS Snippet (Auto Insert · Site Wide Header).
+   Reversible: delete the block / deactivate the snippet.
+
+   Contrast carries the single HEAVIEST axe weight (usually several failing nodes),
+   so this is the biggest single Accessibility lever (est. +6 to +10).
+
+   ⚠ READ THE REAL FAILING NODES FIRST — these selectors are strong DEFAULTS, not
+   confirmed culprits. In PSI open "Background and foreground colors do not have a
+   sufficient contrast ratio" → Show audit → each failing node shows its selector +
+   current ratio. Reconcile every selector below with that list.
+
+   ⚠ SAFETY: broad selectors (body, p, li, a) would ALSO recolor text sitting on
+   DARK backgrounds (dark hero / CTA / footer), turning passing light text into
+   failing dark-on-dark. Rules below are SCOPED to #main-content and EXCLUDE
+   buttons/menus. Use the dark-section exemption block if a dark section lives
+   inside content. After pasting, clear FlyingPress cache and visually re-check the
+   dark hero, CTA sections, buttons, and footer.
+   ===================================================================== */
+
+/* Body / paragraph / list text — content only (not header/footer menus).
+   Divi default #666/#999 -> #3d3d3d (~10.4:1 on white). */
+#main-content p,
+#main-content li,
+#main-content .et_pb_text,
+#main-content .et_pb_post p { color: #3d3d3d; }
+
+/* Muted meta/date/caption text — often #999 (fails) -> #595959 (~7:1 on white) */
+#main-content .post-meta, #main-content .post-meta a,
+#main-content .et_pb_blog_grid .post-meta,
+.wp-caption-text, .et_pb_image_caption,
+.et_pb_slide_description small { color: #595959; }
+
+/* Content links only — exclude Divi buttons and menus. #0b6b75 teal ~= 5.1:1.
+   >>> SWAP for Thrive Downtown's VERIFIED accessible brand shade (must be >= 4.5:1). <<< */
+#main-content a:not(.et_pb_button):not(.et_pb_more_button):not(.et_pb_promo_button) { color: #0b6b75; }
+#main-content a:not(.et_pb_button):not(.et_pb_more_button):not(.et_pb_promo_button):hover,
+#main-content a:not(.et_pb_button):not(.et_pb_more_button):not(.et_pb_promo_button):focus { color: #084f56; }
+
+/* Form placeholders — browser default (~#757575) commonly fails -> #595959.
+   Keep as SEPARATE rules: one invalid vendor selector would drop the whole group. */
+::placeholder { color: #595959; opacity: 1; }
+::-webkit-input-placeholder { color: #595959; opacity: 1; }
+:-ms-input-placeholder { color: #595959; }
+
+/* Buttons — VERIFY the real button background first, then enable EXACTLY ONE line. */
+/* .et_pb_button { color: #ffffff; }   // if the button background is dark / brand */
+/* .et_pb_button { color: #0b3d43; }   // if the button background is light / outline */
+
+/* ---- Dark-section exemption (only if a dark section is INSIDE #main-content) ----
+   Replace .your-dark-section with the ACTUAL section/row id or class from DevTools. */
+/*
+.your-dark-section p, .your-dark-section li,
+.your-dark-section .et_pb_text, .your-dark-section a { color: #ffffff; }
+*/
+
+/* ---- Footer — VERIFY the footer background color first, enable ONE block only ----
+   IF the footer background is DARK — raise light-grey text toward white: */
+#main-footer, #footer-widgets .et_pb_widget, #footer-widgets p,
+#footer-widgets li, #footer-widgets a, #footer-info, #footer-info a { color: #e8e8e8; }
+#footer-info a:hover { color: #ffffff; }
+/*
+   IF the footer background is LIGHT — darken instead (do NOT also use the block above):
+#main-footer, #footer-widgets .et_pb_widget, #footer-info, #footer-info a { color: #3d3d3d; }
+*/
