@@ -26,6 +26,42 @@ function h(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Email the admissions inbox when a student record is added. The record is
+ * already stored, so a delivery hiccup is logged, never lost, and never blocks
+ * the redirect back to the roster.
+ */
+function notify_student_added(int $id, array $s): void
+{
+    $name = trim((string) ($s['name'] ?? ''));
+    $statusKey = (string) ($s['status'] ?? 'enrolled');
+    $body = implode("\n", [
+        'A new student was added to the Nura Care Institute roster.',
+        '',
+        "Student #{$id}: " . ($name !== '' ? $name : '(no name)'),
+        'Course: ' . (trim((string) ($s['course'] ?? '')) ?: '(not set)'),
+        'Status: ' . (STUDENT_STATUSES[$statusKey] ?? 'Enrolled'),
+        'Mobile: ' . (trim((string) ($s['mobile'] ?? '')) ?: '(not set)'),
+        'Email: ' . (trim((string) ($s['email'] ?? '')) ?: '(not set)'),
+        'Start date: ' . (trim((string) ($s['start'] ?? '')) ?: '(not set)'),
+        'Duration: ' . (trim((string) ($s['duration'] ?? '')) ?: '(not set)'),
+        '',
+        'Manage students: ' . NCI_ADMIN_URL . '?view=students',
+    ]) . "\n";
+    $subject = '=?UTF-8?B?' . base64_encode('New student added: ' . ($name !== '' ? $name : 'record #' . $id)) . '?=';
+    $headers = implode("\r\n", [
+        'From: ' . NCI_MAIL_FROM,
+        'X-Mailer: PHP/' . phpversion(),
+        'Content-Type: text/plain; charset=UTF-8',
+    ]);
+    foreach (NCI_NOTIFY_EMAILS as $to) {
+        if (!@mail($to, $subject, $body, $headers)) {
+            @file_put_contents(store_path('mail.log'),
+                gmdate('c') . " student #{$id} mail to {$to} failed\n", FILE_APPEND | LOCK_EX);
+        }
+    }
+}
+
 function csrf_token(): string
 {
     if (empty($_SESSION['csrf'])) {
@@ -158,7 +194,8 @@ if ($user && ($_POST['action'] ?? '') === 'student_add') {
     } else {
         $newId = students_add($_POST);
         if ($newId) {
-            flash_redirect('Student #' . $newId . ' added.', false, keep_params('students'));
+            notify_student_added($newId, $_POST);
+            flash_redirect('Student #' . $newId . ' added. A confirmation email was sent to the admissions inbox.', false, keep_params('students'));
         }
         $flash = 'Could not save the student.';
         $flashErr = true;
@@ -355,7 +392,15 @@ function svg_lines(array $days, int $w = 720, int $h = 220): string
     $x = fn(int $i): float => $pad['l'] + ($n === 1 ? $iw / 2 : $i * $iw / ($n - 1));
     $y = fn(int $v): float => $pad['t'] + $ih - ($v / $max) * $ih;
 
-    $s = '<svg viewBox="0 0 ' . $w . ' ' . $h . '" role="img" aria-label="Daily page views by device" preserveAspectRatio="xMidYMid meet">';
+    // Band bounds: each day owns the plot strip nearest to it, so a pointer
+    // anywhere over the chart resolves to exactly one day.
+    $band = function (int $i) use ($x, $n, $pad, $w): array {
+        $left = $i === 0 ? (float) $pad['l'] : ($x($i - 1) + $x($i)) / 2;
+        $right = $i === $n - 1 ? (float) ($w - $pad['r']) : ($x($i) + $x($i + 1)) / 2;
+        return [$left, $right];
+    };
+
+    $s = '<svg viewBox="0 0 ' . $w . ' ' . $h . '" class="cx-svg" role="img" aria-label="Daily page views by device" preserveAspectRatio="xMidYMid meet">';
     // grid: 3 recessive lines + y labels
     for ($g = 0; $g <= 3; $g++) {
         $gy = $pad['t'] + $ih - $g * $ih / 3;
@@ -363,6 +408,8 @@ function svg_lines(array $days, int $w = 720, int $h = 220): string
         $s .= '<line x1="' . $pad['l'] . '" y1="' . $gy . '" x2="' . ($w - $pad['r']) . '" y2="' . $gy . '" stroke="#e4e7ec" stroke-width="1"/>';
         $s .= '<text x="' . ($pad['l'] - 6) . '" y="' . ($gy + 4) . '" text-anchor="end" class="cx-tick">' . $gv . '</text>';
     }
+    // hover crosshair (moved and shown by JS)
+    $s .= '<line class="cx-cross" x1="0" x2="0" y1="' . $pad['t'] . '" y2="' . ($pad['t'] + $ih) . '" visibility="hidden"/>';
     // x labels: first, middle, last
     foreach ([0, intdiv($n - 1, 2), $n - 1] as $i) {
         $s .= '<text x="' . $x($i) . '" y="' . ($h - 6) . '" text-anchor="middle" class="cx-tick">' . h(substr($keys[$i], 5)) . '</text>';
@@ -375,17 +422,26 @@ function svg_lines(array $days, int $w = 720, int $h = 220): string
             $i++;
         }
         $s .= '<polyline points="' . implode(' ', $pts) . '" fill="none" stroke="' . CHART_COLORS[$k] . '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
-        // hover markers with native tooltips
         $i = 0;
-        foreach ($days as $day => $row) {
-            $s .= '<circle cx="' . round($x($i), 1) . '" cy="' . round($y($row[$k]), 1) . '" r="7" fill="transparent" stroke="none" class="cx-hit">'
-                . '<title>' . h($day) . ': ' . $row[$k] . ' ' . strtolower(CHART_LABELS[$k]) . ' views</title></circle>'
-                . '<circle cx="' . round($x($i), 1) . '" cy="' . round($y($row[$k]), 1) . '" r="2.5" fill="' . CHART_COLORS[$k] . '"/>';
+        foreach ($days as $row) {
+            $s .= '<circle cx="' . round($x($i), 1) . '" cy="' . round($y($row[$k]), 1) . '" r="2.5" fill="' . CHART_COLORS[$k] . '"/>';
             $i++;
         }
-        // direct end label
         $last = end($days);
         $s .= '<text x="' . ($w - $pad['r'] + 5) . '" y="' . (round($y($last[$k]), 1) + 4) . '" class="cx-end" fill="' . CHART_COLORS[$k] . '">' . $last[$k] . '</text>';
+    }
+    // transparent hover bands on top, one per day, carrying that day's counts
+    $i = 0;
+    foreach ($days as $day => $row) {
+        [$bl, $br] = $band($i);
+        $tot = (int) $row['d'] + (int) $row['m'] + (int) $row['t'];
+        $s .= '<rect class="cx-band" x="' . round($bl, 1) . '" y="' . $pad['t'] . '" width="' . round($br - $bl, 1)
+            . '" height="' . $ih . '" fill="transparent"'
+            . ' tabindex="0" role="img"'
+            . ' aria-label="' . h($day) . ': ' . $row['d'] . ' desktop, ' . $row['m'] . ' mobile, ' . $row['t'] . ' tablet, ' . $tot . ' total views"'
+            . ' data-cx="' . round($x($i), 1) . '" data-label="' . h($day) . '"'
+            . ' data-d="' . (int) $row['d'] . '" data-m="' . (int) $row['m'] . '" data-t="' . (int) $row['t'] . '"></rect>';
+        $i++;
     }
     return $s . '</svg>';
 }
@@ -400,11 +456,54 @@ function fmt_ago(int $ts): string
     return intdiv($d, 86400) . ' days ago';
 }
 
+/** Public indexable URLs from sitemap.xml as root-relative paths. */
+function site_pages(): array
+{
+    $file = __DIR__ . '/../sitemap.xml';
+    if (!is_readable($file)) {
+        return [];
+    }
+    $xml = @simplexml_load_file($file);
+    if ($xml === false) {
+        return [];
+    }
+    $paths = [];
+    foreach ($xml->url as $u) {
+        $p = parse_url((string) $u->loc, PHP_URL_PATH);
+        if (is_string($p) && $p !== '') {
+            $paths[$p] = true;
+        }
+    }
+    return array_keys($paths);
+}
+
+/** A friendly label for a URL path. */
+function page_label(string $path): string
+{
+    if ($path === '/') {
+        return 'Home';
+    }
+    $slug = trim($path, '/');
+    $slug = str_replace(['/', '-'], [' / ', ' '], $slug);
+    return ucwords($slug);
+}
+
 /* ================= data for views ================= */
 $leads = $user ? leads_all() : [];
 $days14 = $user ? analytics_days(14) : [];
 $days30 = $user ? analytics_days(30) : [];
 $pages = $user ? analytics_pages() : [];
+
+/* Coverage: every published page mapped to its view count, lowest first.
+   Zero-view pages are the ones that need promotion, like Search Console. */
+$coverage = [];
+if ($user) {
+    foreach (site_pages() as $p) {
+        $coverage[$p] = (int) ($pages[$p] ?? 0);
+    }
+    asort($coverage);
+}
+$notVisited = count(array_filter($coverage, fn($v) => $v === 0));
 
 $statusFilter = $_GET['status'] ?? 'all';
 $counts = ['all' => count($leads)];
@@ -571,8 +670,36 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
               <?php endforeach; ?>
             </div>
           </div>
-          <div class="chart-wrap"><?= svg_lines($days14) ?></div>
+          <div class="chart-wrap"><?= svg_lines($days14) ?><div class="cx-tip" role="status" aria-live="polite" hidden></div></div>
+          <p class="chart-hint">Hover or tap a day to see desktop, mobile, and tablet views.</p>
         </section>
+
+        <div class="col-2">
+          <section class="card">
+            <div class="card-head"><h2>Most visited pages</h2><a class="card-link" href="?view=traffic">Traffic</a></div>
+            <?php if (!$pages): ?>
+              <p class="empty">No page views recorded yet.</p>
+            <?php else: ?>
+              <ul class="mini-pages">
+                <?php foreach (array_slice($pages, 0, 5, true) as $p => $nv): ?>
+                  <li><span class="mp-name"><?= h(page_label($p)) ?></span><span class="mp-n"><?= $nv ?></span></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+          </section>
+          <section class="card">
+            <div class="card-head"><h2>Pages to improve</h2><a class="card-link" href="?view=traffic">Details</a></div>
+            <?php if (!$coverage): ?>
+              <p class="empty">Add a sitemap.xml to see coverage.</p>
+            <?php else: ?>
+              <ul class="mini-pages">
+                <?php foreach (array_slice($coverage, 0, 5, true) as $p => $nv): ?>
+                  <li><span class="mp-name"><?= h(page_label($p)) ?></span><span class="mp-n <?= $nv === 0 ? 'mp-zero' : '' ?>"><?= $nv ?></span></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+          </section>
+        </div>
 
         <section class="card">
           <div class="card-head"><h2>Latest leads</h2><a class="card-link" href="?view=leads">All leads</a></div>
@@ -612,7 +739,8 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
               <?php endforeach; ?>
             </div>
           </div>
-          <div class="chart-wrap"><?= svg_lines($days30, 860, 240) ?></div>
+          <div class="chart-wrap"><?= svg_lines($days30, 860, 240) ?><div class="cx-tip" role="status" aria-live="polite" hidden></div></div>
+          <p class="chart-hint">Hover or tap a day to see desktop, mobile, and tablet views.</p>
         </section>
 
         <section class="card">
@@ -628,6 +756,30 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
                   <td class="pathcell"><?= h($p) ?></td>
                   <td class="num"><?= $nv ?></td>
                   <td class="barcol"><span class="bar" style="width:<?= round(100 * $nv / $maxP) ?>%"></span></td>
+                </tr>
+              <?php endforeach; ?>
+              </tbody>
+            </table>
+          <?php endif; ?>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Pages to improve</h2>
+            <span class="card-note"><?= $notVisited ?> of <?= count($coverage) ?> pages had no views</span>
+          </div>
+          <p class="card-lead">Your published pages with the fewest visits, lowest first. A page showing 0 has not been visited in this window, so it is the best candidate for internal links, a Google Business post, or a share. This is the same idea as the low-traffic report in Search Console.</p>
+          <?php if (!$coverage): ?>
+            <p class="empty">Add a sitemap.xml to see page coverage here.</p>
+          <?php else: ?>
+            <table class="pages-table">
+              <thead><tr><th scope="col">Page</th><th scope="col" class="num">Views</th><th scope="col">Status</th></tr></thead>
+              <tbody>
+              <?php foreach (array_slice($coverage, 0, 12, true) as $p => $nv): ?>
+                <tr>
+                  <td class="pathcell"><a href="<?= h($p) ?>" target="_blank" rel="noopener"><?= h(page_label($p)) ?></a><span class="pathsub"><?= h($p) ?></span></td>
+                  <td class="num"><?= $nv ?></td>
+                  <td><?php if ($nv === 0): ?><span class="tag tag-warn">Not visited</span><?php elseif ($nv < 5): ?><span class="tag tag-soft">Low traffic</span><?php else: ?><span class="tag tag-ok">Getting views</span><?php endif; ?></td>
                 </tr>
               <?php endforeach; ?>
               </tbody>

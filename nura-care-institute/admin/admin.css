@@ -207,7 +207,7 @@ a:hover { color: var(--ember-text); }
 .empty { color: var(--ink-soft); margin: 6px 0; }
 
 /* ---------- chart ---------- */
-.chart-wrap { overflow-x: auto; }
+.chart-wrap { overflow-x: auto; position: relative; }
 .chart-wrap svg { width: 100%; height: auto; min-width: 480px; display: block; }
 .cx-tick { font: 10.5px var(--font-mono); fill: #7c828b; }
 .cx-end { font: 700 11px var(--font-mono); }
@@ -535,4 +535,40 @@ a:hover { color: var(--ember-text); }
   .toolbar select {
     font-size: 16px;
   }
+}
+
+/* ============ interactive chart tooltip + coverage panels ============ */
+.cx-band { pointer-events: all; cursor: crosshair; outline: none; }
+.cx-band:focus-visible { stroke: #46587a; stroke-width: 1.5; }
+.cx-cross { stroke: #98a2b3; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+.cx-tip {
+  position: absolute; top: 6px; left: 0; z-index: 6; pointer-events: none;
+  min-width: 138px; background: #fff; border: 1px solid #d7dbe2; border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(16, 23, 40, 0.16); padding: 9px 11px; font-size: 12px; color: #1b1e22;
+}
+.cx-tip-day { font-weight: 700; margin-bottom: 5px; font-size: 11.5px; color: #46587a; }
+.cx-row { display: flex; align-items: center; gap: 7px; line-height: 1.75; }
+.cx-row b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.cx-sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.cx-total { border-top: 1px solid #eceef1; margin-top: 4px; padding-top: 5px; font-weight: 700; }
+.chart-hint { font-size: 12px; color: #6b7280; margin: 8px 2px 0; }
+.card-lead { font-size: 13px; color: #565c66; margin: 0 0 12px; line-height: 1.5; }
+
+.col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.mini-pages { list-style: none; margin: 0; padding: 0; }
+.mini-pages li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eef0f3; font-size: 13px; }
+.mini-pages li:last-child { border-bottom: 0; }
+.mp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-n { font-variant-numeric: tabular-nums; font-weight: 700; color: #46587a; flex: none; }
+.mp-zero { color: #b23b2e; }
+
+.pathsub { display: block; font-size: 11px; color: #8a909a; font-family: ui-monospace, "IBM Plex Mono", monospace; }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.tag-warn { background: #fdecea; color: #b23b2e; }
+.tag-soft { background: #fef6e7; color: #9a6a12; }
+.tag-ok { background: #eaf3ec; color: #2f7d46; }
+
+@media (max-width: 620px) {
+  .col-2 { grid-template-columns: 1fr; gap: 12px; }
+  .cx-tip { min-width: 128px; font-size: 11.5px; }
 }
