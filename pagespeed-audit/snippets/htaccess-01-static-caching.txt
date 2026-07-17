@@ -1,0 +1,94 @@
+# =====================================================================
+# Thrive Downtown — static caching + compression for .htaccess (APACHE ONLY)
+# ---------------------------------------------------------------------
+# Fixes the FIRST-PARTY slice of PSI "Use efficient cache lifetimes" (~372 KiB).
+# The third-party slice (gtag / fbevents / Elfsight / Trustindex) CANNOT be fixed
+# by headers — you don't control those origins (delay/self-host them instead).
+#
+# WHERE: site-root .htaccess, ABOVE the "# BEGIN WordPress" marker. Do NOT edit
+#   inside the "# BEGIN WebP Express" / "# BEGIN FlyingPress" marker blocks.
+#
+# BACKUP + REVERSAL (do FIRST): in WP File Manager, download a copy of the current
+#   .htaccess. To revert: delete this whole marked block, or restore the backup.
+#   AFTER SAVING, immediately load the homepage + one inner page — a bad directive
+#   yields HTTP 500; if so, restore the backup at once.
+#
+# NOT Apache? LiteSpeed -> use LiteSpeed Cache static rules; Nginx -> use server
+#   location/add_header config. This block will not apply there.
+# Each directive is wrapped in <IfModule> so a missing module is a harmless no-op.
+# =====================================================================
+
+# BEGIN Thrive Downtown Static Caching + Compression
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                          "access plus 1 month"
+
+  # Images (incl. WebP/AVIF/SVG)
+  ExpiresByType image/jpeg                "access plus 1 year"
+  ExpiresByType image/png                 "access plus 1 year"
+  ExpiresByType image/gif                 "access plus 1 year"
+  ExpiresByType image/webp                "access plus 1 year"
+  ExpiresByType image/avif                "access plus 1 year"
+  ExpiresByType image/svg+xml             "access plus 1 year"
+  ExpiresByType image/x-icon              "access plus 1 year"
+  ExpiresByType image/vnd.microsoft.icon  "access plus 1 year"
+
+  # Fonts
+  ExpiresByType font/woff2                "access plus 1 year"
+  ExpiresByType font/woff                 "access plus 1 year"
+  ExpiresByType application/font-woff     "access plus 1 year"
+  ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+  # CSS / JS
+  ExpiresByType text/css                  "access plus 1 year"
+  ExpiresByType application/javascript    "access plus 1 year"
+  ExpiresByType text/javascript           "access plus 1 year"
+
+  # HTML must stay short so page-cache updates are seen
+  ExpiresByType text/html                 "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Long-lived, immutable for versioned/static assets (see caveat below).
+  <FilesMatch "\.(?:css|js|mjs|woff2?|ttf|otf|eot|jpe?g|png|gif|webp|avif|svg|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # Never cache HTML documents in the browser.
+  <FilesMatch "\.(?:html|htm|php)$">
+    Header set Cache-Control "no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+</IfModule>
+
+# ---- Compression ----
+# Prefer Brotli when the host provides it (better ratio than gzip):
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml application/rss+xml image/svg+xml application/vnd.ms-fontobject font/ttf font/otf
+</IfModule>
+# Gzip ONLY when Brotli is absent — the !mod_brotli guard prevents both output
+# filters running on the same response (which can double-compress/corrupt output).
+<IfModule !mod_brotli.c>
+  <IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml application/rss+xml image/svg+xml application/vnd.ms-fontobject font/ttf font/otf
+  </IfModule>
+</IfModule>
+# Note: woff2/webp/avif/jpg/png are already compressed and intentionally NOT listed.
+# END Thrive Downtown Static Caching + Compression
+
+# ---------------------------------------------------------------------
+# CAVEATS (read before shipping):
+# 1. `immutable` = browsers never revalidate for 1 year. Safe ONLY for assets whose
+#    URL changes when content changes (WP/Divi/FlyingPress add ?ver= or hashed names).
+#    RISK: if you ever overwrite a CSS/JS/font/image IN PLACE with the SAME filename
+#    (e.g. re-upload logo.svg), returning visitors keep the stale copy up to a year.
+#    Workaround: change the filename or append a ?v=. If that footgun is unacceptable,
+#    drop the word `immutable` (keep public, max-age=31536000) — the audit still passes.
+# 2. WebP Express "Varied image responses" relies on `Vary: Accept` on images.
+#    `Header set Cache-Control` doesn't touch Vary, so they should coexist — but VERIFY:
+#      curl -sI -H "Accept: image/webp" "https://thrivedowntown.com/wp-content/uploads/YOUR-HERO.jpg" | grep -i "vary\|content-type\|cache-control"
+#      # expect: Vary: Accept  +  Content-Type: image/webp
+#    If `Vary: Accept` is MISSING, remove the image extensions
+#    (jpe?g|png|gif|webp|avif|svg|ico) from the mod_headers FilesMatch and rely on the
+#    mod_expires image/* lines instead (they satisfy the audit).
+# 3. Verify CSS/JS:
+#      curl -sI "https://thrivedowntown.com/wp-content/.../style.css" | grep -i "cache-control\|content-encoding"
+#      # expect: Cache-Control: public, max-age=31536000, immutable  +  Content-Encoding: br (or gzip)

@@ -1,0 +1,95 @@
+/* =====================================================================
+   Thrive Downtown — CLS space-reservation (mobile field CLS 0.2 -> < 0.1)
+   ---------------------------------------------------------------------
+   WHERE TO PASTE:
+     WPCode Lite → + Add Snippet → "Add Your Custom Code" → CSS Snippet,
+     Auto Insert → Site Wide Header.  (WPCode wraps CSS in <style> for you.)
+     OR: Divi → Theme Options → General → Custom CSS (BACK IT UP FIRST).
+   Reversible: deactivate the snippet / clear the field.
+
+   PURPOSE: pre-size every async/late-loading IN-FLOW container so nothing below
+   it shifts. transform/opacity are never touched (they do not cause CLS).
+
+   ⚠ EVERY selector marked VERIFY/PLACEHOLDER must be reconciled with:
+       - View Source (find the real container id/class), AND
+       - PSI → CLS diagnostic → "Layout shift culprits" (the real shifting nodes).
+     Every height must be the MEASURED final MOBILE height of that block
+     (a min-height that is too LARGE just trades a shift for an ugly whitespace gap).
+   ===================================================================== */
+
+/* ---- 1. Smart Slider hero -------------------------------------------- */
+/* VERIFY: replace #n2-ss-2 with the real OUTERMOST slider container id
+   (View Source, search "n2-ss-"). Height = the SS3 Mobile size you set. */
+#n2-ss-2,
+.n2-ss-slider {
+  min-height: 420px;            /* PLACEHOLDER: measured mobile hero height */
+}
+@media (min-width: 768px)  { #n2-ss-2, .n2-ss-slider { min-height: 520px; } } /* PLACEHOLDER: tablet */
+@media (min-width: 981px)  { #n2-ss-2, .n2-ss-slider { min-height: 620px; } } /* PLACEHOLDER: desktop */
+/* If SS3 gives you an aspect-ratio slider instead of fixed px, use this INSTEAD
+   of the min-heights so it scales with width without JS:
+   #n2-ss-2 { aspect-ratio: 16 / 10; min-height: 0; }  */
+/* (No `contain: layout` — it can interfere with Smart Slider layers/controls.) */
+
+/* ---- 2. Divi background-image hero SECTION (no intrinsic dimensions) -- */
+/* Only if the hero is a Section/Row BACKGROUND image (not the slider).
+   PREFER a STABLE custom class: in Divi set the Section → Advanced →
+   "CSS ID & Classes" → CSS Class = "tw-hero", then target .tw-hero. Do NOT rely
+   on Divi's auto-index classes like .et_pb_section_0 (they renumber). */
+.home .tw-hero {                 /* VERIFY: assign this class in Divi */
+  min-height: 420px;             /* PLACEHOLDER: mobile */
+}
+@media (min-width: 981px) {
+  .home .tw-hero { min-height: 620px; }  /* PLACEHOLDER: desktop */
+}
+
+/* ---- 3. Trustindex Google Reviews async widget ----------------------- */
+/* VERIFY: target ONLY the single OUTERMOST wrapper. Do NOT use a broad
+   [class*="trustindex"] selector (it stacks min-heights on nested nodes and
+   forcing display can break the widget's card grid). */
+#ti-widget-XXXX {                /* PLACEHOLDER: real outer wrapper id/class */
+  min-height: 520px;             /* PLACEHOLDER: measured final MOBILE height */
+}
+@media (min-width: 981px) {
+  #ti-widget-XXXX { min-height: 360px; }  /* PLACEHOLDER: measured desktop height */
+}
+
+/* ---- 4. Elfsight inline placeholder — CASE 1 ONLY (usually SKIP) ------ */
+/* A correctly floating (position:fixed) widget CANNOT cause CLS. Apply this
+   ONLY if you confirmed in DevTools that the visible widget is position:fixed on
+   <body> AND this node is an EMPTY in-flow stub. If the widget renders its content
+   INSIDE this node, this rule HIDES the widget. If you replace Elfsight with the
+   static button (html-01), delete this block entirely.
+   VERIFY: class is .elfsight-app-<uuid>. */
+/*
+.elfsight-app-XXXXXXXX {
+  min-height: 0;
+  height: 0;
+  overflow: hidden;
+}
+*/
+
+/* ---- 5. Font-swap reflow guard (pair with the @font-face metrics below) */
+/* VERIFY: use Divi's ACTUAL font names + the selectors Divi already applies them
+   to (DevTools → Computed → font-family). Insert "Primary Fallback" as the 2nd
+   family ONLY. Do NOT blanket-override headings+body to one stack — that flattens
+   Divi's distinct heading/body fonts (a visible design regression). */
+body { font-family: "YourBodyFont", "Primary Fallback", Arial, sans-serif; }
+h1, h2, h3 { font-family: "YourHeadingFont", "Primary Fallback", Arial, sans-serif; }
+
+/* ---- 5b. Metric-matched fallback @font-face (kills the swap reflow) ---- */
+/* GENERATE the four numbers for YOUR primary font with fontpie or @capsizecss.
+   The values below are ILLUSTRATIVE ONLY (Open-Sans-like) — replace them. */
+@font-face {
+  font-family: "Primary Fallback";
+  src: local("Arial");
+  size-adjust: 100.06%;      /* PLACEHOLDER */
+  ascent-override: 101.9%;   /* PLACEHOLDER */
+  descent-override: 27.9%;   /* PLACEHOLDER */
+  line-gap-override: 0%;     /* PLACEHOLDER */
+}
+
+/* NOTE: the draft's `img[loading="lazy"]{content-visibility:auto}` was DELETED on
+   purpose — without contain-intrinsic-size it collapses off-screen boxes to 0 and
+   expands on scroll, which CREATES shift. The correct lazy-image fix is width/height
+   attributes (FlyingPress → Images → Add missing image dimensions). */

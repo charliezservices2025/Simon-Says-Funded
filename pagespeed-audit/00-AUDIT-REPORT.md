@@ -100,4 +100,33 @@ Other categories: **Accessibility 78**, **Best Practices 96** ("Browser errors w
 
 The detailed, copy‑paste fixes for each section follow in the numbered companion files and the sections below.
 
-<!-- WORKSTREAM_SECTIONS -->
+---
+
+## 4. How this package is organized
+
+Work top‑to‑bottom through the **checklist**; open each detail doc as its phase comes up. All ready‑to‑paste code is in `snippets/`.
+
+| File | What it's for |
+|---|---|
+| **[`01-IMPLEMENTATION-CHECKLIST.md`](01-IMPLEMENTATION-CHECKLIST.md)** | **Start here.** The ordered, sequenced plan with QA gates and rollback. |
+| [`02-flyingpress-config.md`](02-flyingpress-config.md) | FlyingPress toggle‑by‑toggle (the central tool; ~70% of the perf win). |
+| [`03-javascript-and-tbt.md`](03-javascript-and-tbt.md) | Cutting JS execution / TBT / main‑thread — the biggest Performance lever. |
+| [`04-cls-fix.md`](04-cls-fix.md) | Eliminating the mobile field CLS 0.2 (the failing Core Web Vital). |
+| [`05-images-caching-lcp.md`](05-images-caching-lcp.md) | WebP, right‑sizing, payload, cache headers, LCP. |
+| [`06-accessibility.md`](06-accessibility.md) | 78/80 → 95+: contrast, names, landmark, lang, ARIA. |
+| [`07-seo-bestpractices-plugin-audit.md`](07-seo-bestpractices-plugin-audit.md) | Crawlable links, console errors, and the 32‑plugin bloat audit. |
+| [`08-residual-risks-and-verification.md`](08-residual-risks-and-verification.md) | What to confirm on the live site + the full adversarial‑QA record. |
+| [`snippets/`](snippets/) | Copy‑paste WPCode PHP/CSS/HTML + `.htaccess`, with an index README. |
+
+## 5. Two decisions already made for you (so the docs don't contradict)
+
+The detailed docs were produced as independent analyses and then reconciled. Two cross‑cutting calls are settled here and are authoritative:
+
+1. **JavaScript delay strategy → FlyingPress v5 "Load when idle" + exclude the slider/jQuery/forms.** This is both the *safest* and the most *plugin‑accurate* path: v5's idle engine runs delayed scripts automatically shortly after paint (no user interaction needed), so Divi's menu, slider, and animations still initialize on their own — you get the TBT win without a "dead until first tap" hero. Excluding `jquery`/`smartslider`/`n2-`/`gravityforms`/`recaptcha` from delay keeps the hero and the booking form perfect, and lets the hero init early enough to protect CLS. All the heavy third‑party (Elfsight, Trustindex, Meta Pixel, gtag) still delays. Only if mobile plateaus below 95 do you escalate to interaction‑delaying those embeds — and Phase 7 (replace Elfsight with a static button, scope Trustindex) usually removes that weight at the source first. Full rationale in the checklist's "authoritative JS strategy" box.
+2. **The floating WhatsApp button uses `#075E54` (dark WhatsApp green), not `#25D366`.** White on `#25D366` is only ~1.98:1 and *fails* WCAG for text and the 3:1 icon rule — it would keep Accessibility below 95. `#075E54` gives ~7.67:1 (passes AA/AAA). The accessible version is in [`snippets/html-01-static-whatsapp-button.html`](snippets/html-01-static-whatsapp-button.html).
+
+## 6. What I could and couldn't do from here
+
+- ✅ Full analysis of both PageSpeed reports + the exact plugin stack; a complete, prioritized, reversible remediation package with copy‑paste code and exact settings; every code snippet adversarially verified for WordPress/Divi safety.
+- ❌ I could **not** log into your wp‑admin (that browser is on your machine, not reachable from my isolated container) or run a live Lighthouse pass (this session's network policy blocks `thrivedowntown.com`). So the exact live‑DOM values are left as clearly‑marked `VERIFY` placeholders with the 30‑second method to extract each — see §1 of the residual‑risks doc.
+- If you want me to *apply* these, the workable path from a cloud environment would be a staging clone or a scoped credential you're comfortable sharing through a proper secret channel (not chat). Otherwise this pack is built so you or your developer can apply it flawlessly.
