@@ -16,6 +16,7 @@ declare(strict_types=1);
 require __DIR__ . '/antispam.php';
 require __DIR__ . '/store.php';
 require __DIR__ . '/sms.php';
+require __DIR__ . '/smtp.php';
 
 const SITE_NAME = 'Nura Care Institute';
 
@@ -184,20 +185,11 @@ $body = "New booking request #{$leadId} from the Nura Care Institute website\n\n
     . "Message:\n{$messageBody}\n\n"
     . "Manage this lead: " . NCI_ADMIN_URL . "?view=leads\n";
 
-$subject = '=?UTF-8?B?' . base64_encode('New booking request: ' . $course . ' from ' . $name) . '?=';
-
-$headers = [
-    'From: ' . NCI_MAIL_FROM,
-    'Reply-To: ' . $name . ' <' . $email . '>',
-    'X-Mailer: PHP/' . phpversion(),
-    'Content-Type: text/plain; charset=UTF-8',
-];
+$subject = 'New booking request: ' . $course . ' from ' . $name;
+$replyTo = $name . ' <' . $email . '>';
 
 foreach (NCI_NOTIFY_EMAILS as $to) {
-    if (!@mail($to, $subject, $body, implode("\r\n", $headers))) {
-        @file_put_contents(store_path('mail.log'),
-            gmdate('c') . " lead #{$leadId} mail to {$to} failed\n", FILE_APPEND | LOCK_EX);
-    }
+    nci_mail($to, $subject, $body, $replyTo);
 }
 
 // Text alert to staff: every number configured in config.php.

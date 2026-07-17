@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../php/store.php';
 require __DIR__ . '/../php/antispam.php';
+require __DIR__ . '/../php/smtp.php';
 
 $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 session_name('ncisess');
@@ -48,17 +49,9 @@ function notify_student_added(int $id, array $s): void
         '',
         'Manage students: ' . NCI_ADMIN_URL . '?view=students',
     ]) . "\n";
-    $subject = '=?UTF-8?B?' . base64_encode('New student added: ' . ($name !== '' ? $name : 'record #' . $id)) . '?=';
-    $headers = implode("\r\n", [
-        'From: ' . NCI_MAIL_FROM,
-        'X-Mailer: PHP/' . phpversion(),
-        'Content-Type: text/plain; charset=UTF-8',
-    ]);
+    $subject = 'New student added: ' . ($name !== '' ? $name : 'record #' . $id);
     foreach (NCI_NOTIFY_EMAILS as $to) {
-        if (!@mail($to, $subject, $body, $headers)) {
-            @file_put_contents(store_path('mail.log'),
-                gmdate('c') . " student #{$id} mail to {$to} failed\n", FILE_APPEND | LOCK_EX);
-        }
+        nci_mail($to, $subject, $body);
     }
 }
 
@@ -220,6 +213,22 @@ if ($user && ($_POST['action'] ?? '') === 'student_delete') {
     }
     $ok = students_delete((int) ($_POST['id'] ?? 0));
     flash_redirect($ok ? 'Student removed.' : 'Could not remove that student.', !$ok, keep_params('students'));
+}
+
+if ($user && ($_POST['action'] ?? '') === 'mail_test') {
+    if (!csrf_ok()) {
+        flash_redirect('Security check failed. Please try again.', true, keep_params('status'));
+    }
+    $to = NCI_NOTIFY_EMAILS[0] ?? '';
+    $method = nci_smtp_enabled() ? 'SMTP' : 'PHP mail()';
+    $ok = $to !== '' && nci_mail($to,
+        'Nura Care Institute test email',
+        "This is a test from your admin dashboard, sent via {$method}.\n\n"
+        . "If you received it, student and booking notifications will reach this inbox.\n"
+        . 'Sent ' . gmdate('c') . " UTC.\n");
+    flash_redirect($ok
+        ? "Test email sent to {$to} via {$method}. Check the inbox (and spam folder)."
+        : "Could not send the test email. See data/mail.log for the reason.", !$ok, keep_params('status'));
 }
 
 /* ---------- instructor forms library ---------- */
@@ -564,6 +573,128 @@ if ($user && $view === 'students' && isset($_GET['print'])) {
     <?php if (!$shownStudents): ?><tr><td colspan="8">No students match this filter yet.</td></tr><?php endif; ?>
   </tbody>
 </table>
+</body>
+</html><?php
+    exit;
+}
+
+/* printable per-student receipt: branded standalone page, pre-filled, then stop */
+if ($user && $view === 'students' && isset($_GET['receipt'])) {
+    $rid = (int) $_GET['receipt'];
+    $stu = null;
+    foreach ($students as $s) {
+        if ((int) $s['id'] === $rid) { $stu = $s; break; }
+    }
+    if ($stu === null) {
+        flash_redirect('That student record was not found.', true, keep_params('students'));
+    }
+    $rDate = local_date('F j, Y');
+    $rNo = 'NCI-' . str_pad((string) $rid, 4, '0', STR_PAD_LEFT);
+    $blank = '<span class="wl"></span>';
+    ?><!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Receipt <?= h($rNo) ?> | Nura Care Institute</title>
+<style>
+  :root { --navy: #16284f; --red: #cc2a2e; --ink: #1b1e22; --line: #b7bcc6; }
+  * { box-sizing: border-box; }
+  body { font: 14px/1.55 "Public Sans", system-ui, Arial, sans-serif; color: var(--ink); margin: 0; background: #eef0f3; }
+  .toolbar { margin: 0; padding: 14px 20px; background: #fff; border-bottom: 1px solid #e2e5ea; }
+  .toolbar a, .toolbar button { font: 600 14px "Public Sans", system-ui, sans-serif; margin-right: 10px; padding: 9px 15px; border: 1px solid var(--navy); border-radius: 8px; background: var(--navy); color: #fff; cursor: pointer; text-decoration: none; display: inline-block; }
+  .toolbar a { background: #fff; color: var(--navy); }
+  .sheet { max-width: 760px; margin: 22px auto; background: #fff; padding: 34px 38px 30px; box-shadow: 0 10px 30px rgba(16,23,40,.12); }
+  .rc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+  .rc-brand strong { display: block; font-family: "Roboto Slab", Georgia, serif; font-size: 20px; color: var(--navy); letter-spacing: .01em; }
+  .rc-brand span { display: block; font-size: 10.5px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+  .rc-lic { text-align: right; font-size: 11px; }
+  .rc-lic b { display: block; color: var(--navy); text-transform: uppercase; letter-spacing: .05em; font-size: 10px; }
+  .rc-lic .num { border: 1.4px solid var(--navy); border-radius: 5px; padding: 4px 10px; margin-top: 4px; font-weight: 700; color: var(--navy); display: inline-block; }
+  .rc-banner { margin: 18px 0 20px; background: var(--navy); color: #fff; border-radius: 8px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .rc-banner h1 { margin: 0; font-family: "Roboto Slab", Georgia, serif; font-size: 26px; letter-spacing: .04em; }
+  .rc-banner span { font-size: 11px; font-weight: 700; text-align: right; letter-spacing: .04em; }
+  .rc-meta { display: flex; justify-content: space-between; gap: 20px; font-size: 13px; margin-bottom: 18px; }
+  .chip { display: inline-block; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 4px 11px; border-radius: 5px; margin: 16px 0 10px; }
+  .rc-row { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid #edeff2; font-size: 13.5px; }
+  .rc-row .k { min-width: 130px; font-weight: 700; color: var(--navy); }
+  .rc-row .v { flex: 1; }
+  .wl { display: inline-block; min-width: 150px; border-bottom: 1px solid var(--line); }
+  .rc-cols { display: flex; gap: 26px; }
+  .rc-cols > div { flex: 1; }
+  .methods { margin-top: 6px; font-size: 13px; }
+  .methods label { margin-right: 16px; white-space: nowrap; }
+  .box { display: inline-block; width: 12px; height: 12px; border: 1.3px solid var(--navy); border-radius: 2px; vertical-align: -2px; margin-right: 5px; }
+  .sig { margin-top: 26px; display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; }
+  .sig .line { flex: 1; }
+  .sig .line b { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--navy); }
+  .sig .line .signame { font-family: "Times New Roman", Georgia, serif; font-style: italic; font-size: 18px; color: var(--navy); border-bottom: 1px solid var(--line); padding: 0 4px 2px; }
+  .sig .line .dl { border-bottom: 1px solid var(--line); height: 22px; }
+  .rc-foot { margin-top: 26px; border-top: 2px solid var(--navy); padding-top: 10px; font-size: 11.5px; color: #4a4f57; text-align: center; }
+  .rc-foot .thanks { color: var(--red); font-family: "Times New Roman", Georgia, serif; font-style: italic; font-size: 14px; margin-bottom: 4px; }
+  @media print { .toolbar { display: none; } body { background: #fff; } .sheet { box-shadow: none; margin: 0; max-width: none; padding: 12mm 14mm; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <a href="?view=students">Back to dashboard</a>
+  <button onclick="window.print()">Print or save as PDF</button>
+</div>
+<div class="sheet">
+  <div class="rc-head">
+    <div class="rc-brand">
+      <strong>TYNESHA ZACARIAS</strong>
+      <span>Training that empowers you to make a difference.</span>
+    </div>
+    <div class="rc-lic"><b>License Number</b><span class="num">07150349010</span></div>
+  </div>
+  <div class="rc-banner">
+    <h1>RECEIPT</h1>
+    <span>COURSE PAYMENT<br>AND ENROLLMENT</span>
+  </div>
+  <div class="rc-meta">
+    <div><strong>Receipt number:</strong> <?= h($rNo) ?></div>
+    <div><strong>Date:</strong> <?= h($rDate) ?></div>
+  </div>
+
+  <div class="chip">Student information</div>
+  <div class="rc-row"><span class="k">Student name</span><span class="v"><?= h($stu['name'] ?: '') ?></span></div>
+  <div class="rc-row"><span class="k">Phone number</span><span class="v"><?= $stu['mobile'] !== '' ? h($stu['mobile']) : $blank ?></span></div>
+  <div class="rc-row"><span class="k">Email</span><span class="v"><?= $stu['email'] !== '' ? h($stu['email']) : $blank ?></span></div>
+  <div class="rc-row"><span class="k">Address</span><span class="v"><?= $stu['address'] !== '' ? h($stu['address']) : $blank ?></span></div>
+
+  <div class="chip">Course information</div>
+  <div class="rc-row"><span class="k">Course</span><span class="v"><?= h($stu['course'] ?: '') ?></span></div>
+  <div class="rc-cols">
+    <div class="rc-row"><span class="k">Start date</span><span class="v"><?= $stu['start'] !== '' ? h($stu['start']) : $blank ?></span></div>
+    <div class="rc-row"><span class="k">Duration</span><span class="v"><?= $stu['duration'] !== '' ? h($stu['duration']) : $blank ?></span></div>
+  </div>
+  <div class="rc-row"><span class="k">Instructor</span><span class="v">Tynesha Zacarias, Registered Nurse and Lead Instructor</span></div>
+
+  <div class="chip">Payment</div>
+  <div class="rc-cols">
+    <div class="rc-row"><span class="k">Amount paid</span><span class="v">$ <span class="wl"></span></span></div>
+    <div class="rc-row"><span class="k">Balance due</span><span class="v">$ <span class="wl"></span></span></div>
+  </div>
+  <div class="methods">
+    <strong style="color:var(--navy);">Payment method:</strong>
+    <label><span class="box"></span>Cash</label>
+    <label><span class="box"></span>Credit / debit card</label>
+    <label><span class="box"></span>Zelle</label>
+    <label><span class="box"></span>Other</label>
+  </div>
+
+  <div class="sig">
+    <div class="line"><b>Instructor signature</b><div class="signame">Tynesha Zacarias</div></div>
+    <div class="line"><b>Date</b><div class="dl"></div></div>
+  </div>
+
+  <div class="rc-foot">
+    <div class="thanks">Thank you for choosing quality training and continuing your education.</div>
+    Nura Care Institute &middot; 9198 Greenback Lane, Suite 108, Orangevale, CA 95662 &middot; (916) 544-1256
+  </div>
+</div>
 </body>
 </html><?php
     exit;
@@ -946,6 +1077,7 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
               <div><dt>Duration</dt><dd><?= h($s['duration'] ?: 'not set') ?></dd></div>
             </dl>
             <?php if (!empty($s['notes'])): ?><p class="lead-msg"><?= nl2br(h($s['notes'])) ?></p><?php endif; ?>
+            <p class="lead-copy"><a href="?view=students&amp;receipt=<?= (int) $s['id'] ?>" target="_blank" rel="noopener">Print receipt &rarr;</a></p>
             <details class="edit-details">
               <summary>Edit</summary>
               <form method="post" class="form-grid">
@@ -1066,7 +1198,7 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
             ['Web server', 'ok', 'Serving pages (you are reading one).'],
             ['PHP ' . PHP_VERSION, version_compare(PHP_VERSION, '8.0', '>=') ? 'ok' : 'warn', 'Version ' . PHP_VERSION],
             ['Data storage', is_writable(NCI_DATA_DIR) ? 'ok' : 'err', is_writable(NCI_DATA_DIR) ? 'Leads and analytics are being saved.' : 'data/ directory is NOT writable.'],
-            ['Email function', !function_exists('mail') ? 'err' : ($mailFails ? 'warn' : 'ok'), function_exists('mail') ? ($mailFails ? $mailFails . ' delivery failures logged; check data/mail.log.' : 'Available; no delivery failures logged.') : 'mail() missing.'],
+            ['Email delivery', $mailFails ? 'warn' : 'ok', (nci_smtp_enabled() ? 'Sending via SMTP.' : 'Using PHP mail(); add php/smtp.key to send via SMTP.') . ($mailFails ? ' ' . $mailFails . ' issue(s) logged, check data/mail.log.' : ' No failures logged.')],
             ['Text message alerts', NCI_SMS['enabled'] ? ($smsFails ? 'warn' : 'ok') : 'warn', NCI_SMS['enabled'] ? (count(NCI_SMS['numbers']) . ' number(s) on alert list' . ($smsFails ? '; ' . $smsFails . ' failures logged, check data/sms.log.' : ($smsLast !== '' ? '; last: ' . $smsLast : '; none sent yet.'))) : 'Disabled: add the Textbelt key to php/sms.key.'],
             ['HTTPS', $secure ? 'ok' : 'warn', $secure ? 'Connection is encrypted.' : 'Not detected on this request.'],
             ['Disk space', ($freePct === null || $freePct > 10) ? 'ok' : 'warn', $freePct === null ? 'Not reported by host.' : $freePct . '% free.'],
@@ -1084,6 +1216,18 @@ $mobileShare = ($week['all'] ?? 0) > 0 ? round(100 * $week['m'] / $week['all']) 
               </li>
             <?php endforeach; ?>
           </ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Email delivery</h2><span class="card-note"><?= nci_smtp_enabled() ? 'SMTP configured' : 'PHP mail() fallback' ?></span></div>
+          <p class="card-lead"><?= nci_smtp_enabled()
+            ? 'Notifications send through your SMTP inbox. Use the button to confirm delivery.'
+            : 'Notifications currently use PHP mail(), which can be blocked or land in spam. Add your SMTP details to php/smtp.key (see php/smtp.key.example) for reliable delivery, then test below.' ?></p>
+          <form method="post">
+            <input type="hidden" name="action" value="mail_test">
+            <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+            <button type="submit">Send a test email to <?= h(NCI_NOTIFY_EMAILS[0] ?? 'the admissions inbox') ?></button>
+          </form>
         </section>
 
         <section class="card">

@@ -6,3 +6,4 @@ php/sms.key
 # Runtime data (leads, analytics, rate limits, logs); keep only the .htaccess guard
 data/*
 !data/.htaccess
+php/smtp.key
