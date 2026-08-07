@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "smartseo": {
+      "type": "http",
+      "url": "https://app-smartseo-prod.azurewebsites.net/mcp",
+      "headers": {
+        "Authorization": "Bearer sseo_live_t6WOnOPRNL22YzXm721ZfKbsNE38HfgsK3RaAMoDFay"
+      }
+    }
+  }
+}
