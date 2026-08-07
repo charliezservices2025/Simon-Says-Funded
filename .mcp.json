@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "smartseo": {
+      "type": "http",
+      "url": "https://app-smartseo-prod.azurewebsites.net/mcp",
+      "headers": {
+        "Authorization": "Bearer ${SMARTSEO_API_KEY}"
+      }
+    }
+  }
+}
