@@ -1,0 +1,62 @@
+{%- comment -%}
+  perf-lcp-preload.liquid — preload the LCP (hero) image from <head>.
+
+  WHY: the browser's preload scanner cannot discover an image that lives in CSS, in a JS-built
+  slideshow, or behind loading="lazy". Preloading starts the request during HTML parse instead
+  of after scripts execute. On badgemyauto.com the mobile LCP is 15.8s with FCP at 6.3s — that
+  9.5s gap is exactly this problem.
+
+  INSTALL: in theme.liquid <head>, AFTER the preconnects and BEFORE {{ content_for_header }}:
+      {%- render 'perf-lcp-preload' -%}
+
+  CRITICAL RULES:
+    1. Only preload on templates that actually show this image. A preload for an unused image
+       steals bandwidth from the one that IS used and makes LCP worse.
+    2. imagesrcset / imagesizes MUST match the <img> srcset/sizes byte-for-byte, or the browser
+       downloads the image twice.
+    3. The <img> itself still needs loading="eager" and fetchpriority="high". Preload alone does
+       not stop loading="lazy" from deferring it.
+
+  CONFIGURE: point `lcp_image` at wherever your hero image actually lives. The three candidates
+  below cover the usual cases — delete the ones that don't apply to your theme.
+{%- endcomment -%}
+
+{%- liquid
+  assign lcp_image = blank
+
+  # Homepage hero. Adjust the section id to match your theme's slideshow/image-banner section.
+  if template.name == 'index'
+    assign hero_section = sections['image-banner'] | default: sections['slideshow']
+    if hero_section != blank
+      assign lcp_image = hero_section.settings.image
+    endif
+    # Fallback: a theme setting, if your theme stores the hero globally.
+    if lcp_image == blank
+      assign lcp_image = settings.hero_image
+    endif
+  endif
+
+  # Product pages: the featured image is almost always the LCP element.
+  if template.name == 'product'
+    assign lcp_image = product.featured_media.preview_image
+  endif
+
+  # Collection pages: the first product card image.
+  if template.name == 'collection'
+    assign lcp_image = collection.products.first.featured_media.preview_image
+  endif
+-%}
+
+{%- if lcp_image != blank -%}
+  {%- capture lcp_sizes -%}100vw{%- endcapture -%}
+  <link
+    rel="preload"
+    as="image"
+    fetchpriority="high"
+    href="{{ lcp_image | image_url: width: 1200 }}"
+    imagesrcset="{{ lcp_image | image_url: width:  600 }} 600w,
+                 {{ lcp_image | image_url: width:  900 }} 900w,
+                 {{ lcp_image | image_url: width: 1200 }} 1200w,
+                 {{ lcp_image | image_url: width: 1800 }} 1800w"
+    imagesizes="{{ lcp_sizes }}">
+{%- endif -%}
