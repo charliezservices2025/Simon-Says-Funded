@@ -1,0 +1,46 @@
+{%- comment -%}
+  perf-meta-description.liquid — fixes the SEO audit
+  "Document does not have a meta description" (SEO 92 -> 100 on both mobile and desktop).
+
+  INSTALL: in theme.liquid <head>, just after <title>:
+      {%- render 'perf-meta-description' -%}
+
+  IMPORTANT: this snippet is a FALLBACK, not the real fix. It guarantees the tag is never empty,
+  but a generated description is worth far less than a written one. Set real descriptions in:
+    - Homepage:   Online Store > Preferences > "Meta description"
+    - Products:   product page > Search engine listing > Edit
+    - Collections: collection page > Search engine listing > Edit
+    - Pages/blogs: same "Search engine listing" panel
+
+  Aim for 140-160 characters, written for a human deciding whether to click.
+{%- endcomment -%}
+
+{%- liquid
+  # Prefer the description authored in admin for this resource.
+  assign meta_desc = page_description
+
+  if meta_desc == blank
+    case template.name
+      when 'product'
+        assign meta_desc = product.description | strip_html | truncate: 155
+      when 'collection'
+        assign meta_desc = collection.description | strip_html | truncate: 155
+      when 'article'
+        assign meta_desc = article.excerpt_or_content | strip_html | truncate: 155
+      when 'page'
+        assign meta_desc = page.content | strip_html | truncate: 155
+      else
+        assign meta_desc = shop.description
+    endcase
+  endif
+
+  # Last resort so the tag is never missing.
+  if meta_desc == blank
+    assign meta_desc = shop.name | append: ' — ' | append: shop.description
+  endif
+  if meta_desc == blank
+    assign meta_desc = shop.name
+  endif
+-%}
+
+<meta name="description" content="{{ meta_desc | strip_newlines | escape }}">
