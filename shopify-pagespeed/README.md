@@ -28,6 +28,23 @@ Baseline (PageSpeed Insights, Aug 14 2026): **Desktop 72 · Mobile 45** · A11y 
 | `snippets/perf-meta-description.liquid` | Guarantees a meta description (SEO 92 → 100) |
 | `snippets/perf-a11y-fixes.js` | Titles app-injected iframes (A11y 94 → 100) |
 | `tools/lighthouse-score-model.py` | Score calculator — model a change before doing the work |
+| `tools/audit-theme.py` | Scans a theme export for these anti-patterns and reports `file:line` |
+
+### Auditing a theme export
+
+Export the live theme (Online Store → Themes → ⋯ → **Download theme file**), then:
+
+```bash
+python3 tools/audit-theme.py path/to/theme.zip      # or an unzipped directory
+```
+
+It reports findings grouped by remediation stage and severity — render-blocking scripts, lazy or
+CSS-background hero images, missing `width`/`height`, `image_url` without a width, fonts without
+`swap`, hardcoded third-party scripts, oversized assets, and the list of **enabled app embeds**
+(the Stage 2 hit list) read from `config/settings_data.json`.
+
+Findings are heuristic: a static scan cannot prove which element is the LCP, so confirm against
+the report's "LCP breakdown" before rewriting a hero.
 
 The two JavaScript files are unit-tested for behaviour and safety guards (checkout/cart/account
 paths, theme editor, empty-config no-op, post-release pass-through).
