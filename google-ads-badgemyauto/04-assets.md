@@ -43,8 +43,22 @@ Google needs ≥ 3 values per header; 4–8 is ideal.
 
 ## Price assets (recommendation: "Add price assets", +2.5 %)
 
-Type **Products** · Currency USD · Price qualifier **From**. Fill the prices from your store;
-three rows minimum, up to eight.
+Form settings (Recommendations → "Add price assets" → the form opens with five rows):
+
+| Field | Set to | Note |
+|---|---|---|
+| Language | English | default |
+| Type | **Products** | the form defaults to **Brands**; change it, or the preview reads "Brand 1 / Brand 2" |
+| Currency | USD | default |
+| Price qualifier | **From** | "No qualifier" implies a fixed price; custom emblems vary by size and finish |
+| Header | product name, ≤ 25 chars | |
+| Price | starting price, **No units** | keep "No units"; "per hour / per day" are for services |
+| Description | ≤ 25 chars | |
+| Final URL | the product or configurator page | not the homepage or About page |
+| Mobile final URL | leave blank | same page serves both |
+
+Fill the prices from your store; three rows minimum (delete the empty extra rows before Apply),
+up to eight.
 
 | Header (≤ 25) | Description (≤ 25) | Price | Final URL |
 |---|---|---|---|
