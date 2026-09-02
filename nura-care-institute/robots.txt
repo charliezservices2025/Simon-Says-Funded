@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /php/
+Disallow: /data/
+
+Sitemap: https://nuracareinstitute.com/sitemap.xml

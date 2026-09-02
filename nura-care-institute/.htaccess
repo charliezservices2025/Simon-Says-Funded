@@ -1,0 +1,64 @@
+RewriteEngine On
+
+# Canonicalize scheme and host in a single 301 hop: force HTTPS and non-www
+RewriteCond %{HTTP_HOST} ^www\.nuracareinstitute\.com$ [NC,OR]
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://nuracareinstitute.com/$1 [L,R=301]
+
+# Old .html URLs redirect permanently to the current clean paths
+RewriteRule ^index\.html$ / [R=301,L]
+# Any nested index.html redirects to its clean directory URL
+RewriteRule ^(.+)/index\.html$ /$1/ [R=301,L]
+RewriteRule ^about\.html$ /about/ [R=301,L]
+RewriteRule ^faq\.html$ /faq/ [R=301,L]
+RewriteRule ^enroll\.html$ /enroll/ [R=301,L]
+RewriteRule ^thank-you\.html$ /thank-you/ [R=301,L]
+RewriteRule ^courses\.html$ /courses/ [R=301,L]
+RewriteRule ^courses/certified-nursing-assistant\.html$ /courses/certified-nursing-assistant/ [R=301,L]
+RewriteRule ^courses/home-health-aide\.html$ /courses/home-health-aide/ [R=301,L]
+RewriteRule ^courses/bls-cpr-certification\.html$ /courses/bls-cpr-certification/ [R=301,L]
+RewriteRule ^courses/acls-certification\.html$ /courses/acls-certification/ [R=301,L]
+RewriteRule ^courses/restorative-nursing-assistant\.html$ /courses/restorative-nursing-assistant/ [R=301,L]
+RewriteRule ^courses/cna-inservice-hours\.html$ /courses/cna-inservice-hours/ [R=301,L]
+
+ErrorDocument 404 /404.html
+
+# The data directory (leads, analytics, logs) must never be web-readable
+RewriteRule ^data(/|$) - [F,L]
+
+# Anti-spam secret material must never be web-readable
+<FilesMatch "\.key$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+AddType font/woff2 .woff2
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType video/mp4 "access plus 1 year"
+  ExpiresByType video/webm "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml application/json text/plain application/xml
+</IfModule>

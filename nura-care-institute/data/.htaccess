@@ -1,0 +1,9 @@
+# Leads, analytics, and logs live here. Deny all web access;
+# only PHP on the server reads and writes these files.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

@@ -1,0 +1,247 @@
+(function () {
+  "use strict";
+
+  // Footer year
+  var yearEl = document.getElementById("year");
+  if (yearEl) {
+    yearEl.textContent = new Date().getFullYear();
+  }
+
+  // Respect reduced-motion: drop the hero video entirely (the CSS poster
+  // background takes over) so no video bytes are fetched or played.
+  var heroVideo = document.querySelector(".hero-bg");
+  if (
+    heroVideo &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    heroVideo.removeAttribute("autoplay");
+    if (typeof heroVideo.pause === "function") heroVideo.pause();
+    heroVideo.parentNode.removeChild(heroVideo);
+    heroVideo = null;
+  }
+
+  // Start the hero video on the first human interaction. Until then the
+  // poster frame shows, which keeps initial paint fast and light.
+  if (heroVideo) {
+    var startHero = function () {
+      ["scroll", "pointermove", "touchstart", "keydown", "click"].forEach(function (ev) {
+        window.removeEventListener(ev, startHero);
+      });
+      if (heroVideo.isConnected && typeof heroVideo.play === "function") {
+        var p = heroVideo.play();
+        if (p && typeof p.catch === "function") p.catch(function () {});
+      }
+    };
+    ["scroll", "pointermove", "touchstart", "keydown", "click"].forEach(function (ev) {
+      window.addEventListener(ev, startHero, { once: true, passive: true });
+    });
+  }
+
+  // Mobile nav toggle
+  var navToggle = document.getElementById("navToggle");
+  var navLinks = document.getElementById("primaryNav");
+  if (navToggle && navLinks) {
+    navToggle.addEventListener("click", function () {
+      var isOpen = navLinks.getAttribute("data-open") === "true";
+      navLinks.setAttribute("data-open", String(!isOpen));
+      navToggle.setAttribute("aria-expanded", String(!isOpen));
+    });
+    navLinks.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        navLinks.setAttribute("data-open", "false");
+        navToggle.setAttribute("aria-expanded", "false");
+      });
+    });
+  }
+
+  // Submenu (Service Areas) toggle: drives the dropdown on touch/mobile and
+  // keyboard. Desktop also opens it on hover/focus via CSS.
+  document.querySelectorAll(".submenu-toggle").forEach(function (toggle) {
+    var menu = document.getElementById(toggle.getAttribute("aria-controls"));
+    if (!menu) return;
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      var isOpen = menu.getAttribute("data-open") === "true";
+      menu.setAttribute("data-open", String(!isOpen));
+      toggle.setAttribute("aria-expanded", String(!isOpen));
+    });
+  });
+
+  // FAQ accordions
+  document.querySelectorAll(".faq-item").forEach(function (item) {
+    var btn = item.querySelector(".faq-q");
+    var panel = item.querySelector(".faq-a");
+    var inner = panel ? panel.querySelector(".faq-a-inner") : null;
+    if (!btn || !panel) return;
+
+    btn.addEventListener("click", function () {
+      var isOpen = item.getAttribute("data-open") === "true";
+      item.setAttribute("data-open", String(!isOpen));
+      btn.setAttribute("aria-expanded", String(!isOpen));
+      panel.style.maxHeight = !isOpen ? inner.offsetHeight + "px" : "0px";
+    });
+  });
+
+  // Enrollment form
+  var form = document.getElementById("enrollForm");
+  if (form) {
+    var statusEl = document.getElementById("enrollStatus");
+    var submitBtn = form.querySelector('button[type="submit"]');
+
+    // Anti-spam human check: fetch a signed challenge from the server and
+    // show the verification question. The server rejects submissions that
+    // lack a valid, correctly answered, human-paced challenge.
+    var checkRow = document.getElementById("humanCheckRow");
+    var questionEl = document.getElementById("humanQuestion");
+    var answerEl = document.getElementById("human_answer");
+
+    function loadChallenge() {
+      if (!checkRow || !questionEl || !answerEl) return;
+      fetch("/php/challenge.php", { headers: { Accept: "application/json" } })
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (c) {
+          if (!c || !c.sig || !c.q) throw new Error("bad challenge");
+          document.getElementById("challengeTs").value = c.ts;
+          document.getElementById("challengeNonce").value = c.nonce;
+          document.getElementById("challengeSig").value = c.sig;
+          questionEl.textContent = c.q;
+          answerEl.value = "";
+          answerEl.required = true;
+          checkRow.hidden = false;
+        })
+        .catch(function () {
+          statusEl.setAttribute("data-state", "error");
+          statusEl.textContent =
+            "Our spam check could not load. Please refresh the page, or call (916) 544-1256.";
+        });
+    }
+    loadChallenge();
+
+    // Non-JS fallback redirected back here after a server-side error.
+    if (window.location.search.indexOf("error=1") !== -1) {
+      statusEl.setAttribute("data-state", "error");
+      statusEl.textContent =
+        "Something went wrong sending your request. Please call us at (916) 544-1256.";
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      // Honeypot check
+      var honeypot = form.querySelector('input[name="website"]');
+      if (honeypot && honeypot.value) {
+        return;
+      }
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      var data = new FormData(form);
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending...";
+      statusEl.removeAttribute("data-state");
+
+      fetch("/php/enroll.php", {
+        method: "POST",
+        body: data,
+        headers: { Accept: "application/json" },
+      })
+        .then(function (res) {
+          return res.json().catch(function () {
+            return { ok: res.ok };
+          });
+        })
+        .then(function (json) {
+          if (json && json.ok) {
+            form.reset();
+            statusEl.setAttribute("data-state", "success");
+            statusEl.textContent =
+              "Thanks! Your enrollment request has been sent. We will contact you within one business day.";
+            window.location.href = "/thank-you/";
+          } else {
+            statusEl.setAttribute("data-state", "error");
+            statusEl.textContent =
+              (json && json.message) ||
+              "Something went wrong sending your request. Please call us at (916) 544-1256.";
+            // The server asked for a fresh spam-check question.
+            if (json && json.code === "challenge") {
+              loadChallenge();
+            }
+          }
+        })
+        .catch(function () {
+          statusEl.setAttribute("data-state", "error");
+          statusEl.textContent =
+            "Something went wrong sending your request. Please call us at (916) 544-1256.";
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Enrollment Request";
+        });
+    });
+  }
+})();
+
+/* -----------------------------------------------------------------
+   First-party page view beacon. Cookie-free and anonymous: sends only
+   the page path and a device size class (mobile / tablet / desktop)
+   to our own server for the admin traffic dashboard. No third parties,
+   no identifiers, nothing personal.
+   ----------------------------------------------------------------- */
+(function () {
+  if (navigator.webdriver) return;
+  var w = window.innerWidth || document.documentElement.clientWidth || 1280;
+  var device = w <= 767 ? "m" : w <= 1024 ? "t" : "d";
+  var payload = JSON.stringify({ p: location.pathname, d: device });
+  try {
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon("/php/track.php", new Blob([payload], { type: "application/json" }));
+    } else {
+      fetch("/php/track.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        keepalive: true
+      });
+    }
+  } catch (e) { /* analytics must never break the page */ }
+
+  // Homepage video stories: play each clip only while it is on screen, so we
+  // never download or run four videos at once. Reduced-motion users are never
+  // auto-played; instead we fetch just the first frame and seek to it so they
+  // see a still image of the scene rather than an empty box.
+  var storyVideos = Array.prototype.slice.call(document.querySelectorAll(".story-video"));
+  if (storyVideos.length) {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      storyVideos.forEach(function (v) {
+        try {
+          v.preload = "metadata";
+          v.load();
+          v.addEventListener("loadedmetadata", function () {
+            try { v.currentTime = 0.05; } catch (e) {}
+          }, { once: true });
+        } catch (e) {}
+      });
+    } else if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var v = entry.target;
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            if (v.preload !== "auto") v.preload = "auto";
+            var p = v.play();
+            if (p && typeof p.catch === "function") p.catch(function () {});
+          } else if (typeof v.pause === "function") {
+            v.pause();
+          }
+        });
+      }, { threshold: [0, 0.5, 1] });
+      storyVideos.forEach(function (v) { io.observe(v); });
+    }
+  }
+})();
