@@ -1,56 +1,76 @@
-# 7 · Google tag gateway (Cloudflare) — when "Sign into Cloudflare" will not connect
+# 7 · "Upgrade your measurement with Google tag gateway" — why it fails and what to do instead
 
 Google tag: AW-18362720235 / Google tag ID **GT-NS4JDHV7**. Cloudflare account in use: `928cdf1e…`.
+Site host: **Lovable** (custom domain pointing at Lovable's edge IP `185.158.133.1`).
 
-## Diagnosis
+## Root cause
 
-`badgemyauto.com` and `www.badgemyauto.com` resolve to an IP inside Cloudflare's network (AS13335),
-so the zone is already on Cloudflare and proxied. The failure is in the Google → Cloudflare
-OAuth handoff, not in DNS. Google's own help page says: if the error persists, **set it up from the
-Cloudflare interface instead**. That is the professional fix; the Google-side wizard is optional.
+Google tag gateway on Cloudflare works by having **your** Cloudflare zone proxy the site
+(orange cloud) and rewrite tag requests to a first-party path. Lovable's custom-domain setup
+requires the A records for `@` and `www` to be **DNS only** (grey cloud) pointing at
+`185.158.133.1`; Lovable terminates TLS and serves the site from its own infrastructure.
+With the proxy off, Cloudflare has no domain "running the Google tag and Cloudflare", so the
+Google wizard's "Sign into Cloudflare" step cannot complete. Turning the proxy on breaks the
+Lovable domain (verification fails, SSL errors). The recommendation is therefore **not
+applicable** to this site.
 
-## Fix A · Set it up from Cloudflare (5 minutes)
+## What to do
 
-Requirements: the Cloudflare login must be **Super Administrator, Administrator or Zaraz Admin**
-on the account that holds the `badgemyauto.com` zone (or Domain Administrator if roles are
-domain-scoped). The feature is free on every plan.
+1. In Google Ads → Recommendations, open the card's ⋮ menu → **Dismiss** → reason
+   "Not relevant". It carries no optimization-score uplift, so dismissing it costs nothing.
+2. Get the same benefit (recovering conversions dropped by iOS/Safari tracking prevention)
+   through **Enhanced conversions** and a correct purchase tag, which the Lovable site needs
+   anyway for step `01`.
 
-1. `dash.cloudflare.com` → **Websites** → confirm `badgemyauto.com` is listed and **Active**.
-   If it is not listed, the zone lives in a different Cloudflare account (often a web developer's).
-   Get added to *that* account as Administrator; do not create a second account or move DNS.
-2. **DNS → Records**: `badgemyauto.com` (A/CNAME) and `www` must be **Proxied** (orange cloud).
-3. Left nav → **Google tag gateway** (Cloudflare's "Google Tag Gateway" page).
-4. Toggle **Turn on and configure Google tag gateway**.
-5. **Google tag ID**: `GT-NS4JDHV7`
-6. **Measurement path**: an unused path on the site, e.g. `/metrics`. Do not use `/gtm`, `/gtag`
-   or any real store route.
-7. **Save**. Configuration applies to every hostname in the zone.
-8. Back in Google Ads → Tools → Data manager → Google tag → **Google tag gateway**: the domain
-   should now show as connected/active. If it shows "Paused" or "No domains", open the Google tag
-   → Admin → Google tag gateway and confirm the domain there.
+## Purchase tag for the Lovable site
 
-## Fix B · If you prefer the Google wizard
+Paste this prompt into the Lovable project chat. Replace the two placeholders first.
 
-The wizard fails most often for one of these. Work down the list:
+```
+Add Google Ads conversion tracking to this site.
 
-| Cause | Fix |
-|---|---|
-| Multiple Google logins (`authuser=6` in the URL) | Open Chrome **Incognito**, sign in to *only* the Google Ads account, then the Cloudflare account, and re-run the wizard |
-| Popup / third-party cookies blocked | `chrome://settings/content/popups` → allow `ads.google.com`; allow third-party cookies for `[*.]google.com` and `dash.cloudflare.com`; pause uBlock/Privacy Badger/Brave shields on both |
-| Cloudflare login lacks role | Cloudflare → Manage account → Members: must be Super Administrator / Administrator / Zaraz Admin |
-| Zone is in another Cloudflare account | See Fix A step 1 |
-| Cloudflare account already bound to a different Google/GTM account | Binding is permanent; use Fix A |
+1. In index.html <head>, add the Google tag:
+   <script async src="https://www.googletagmanager.com/gtag/js?id=GT-NS4JDHV7"></script>
+   <script>
+     window.dataLayer = window.dataLayer || [];
+     function gtag(){dataLayer.push(arguments);}
+     gtag('js', new Date());
+     gtag('config', 'GT-NS4JDHV7', { allow_enhanced_conversions: true });
+   </script>
 
-## Verify (2 minutes)
+2. On the order-confirmation / checkout-success page, after the order is confirmed, fire:
+   gtag('set', 'user_data', { email: ORDER_EMAIL, phone_number: ORDER_PHONE_E164 });
+   gtag('event', 'conversion', {
+     send_to: 'AW-18362720235/<CONVERSION_LABEL>',
+     value: ORDER_TOTAL_NUMBER,
+     currency: 'USD',
+     transaction_id: ORDER_ID
+   });
+   Use the real order total (number, not string), the order id, and the buyer's email
+   from the completed order. Fire it exactly once per order (guard with the order id in
+   sessionStorage so a refresh does not re-fire).
 
-- Open `badgemyauto.com` → Chrome DevTools → Network → filter `metrics` (your path). The
-  `gtag/js?id=GT-NS4JDHV7` request should load from `badgemyauto.com/metrics/…`, not from
-  `googletagmanager.com`.
-- Tag Assistant: the Google Ads tag still fires; conversion pings go through the first-party path.
-- The "Upgrade your measurement with Google tag gateway" recommendation clears within 24–48 h.
+3. Do not fire the conversion event on add-to-cart, preview, or checkout start.
+```
 
-## Do not
+`<CONVERSION_LABEL>` comes from Google Ads → Goals → Conversions → the Purchase action →
+Tag setup → "Use Google tag" → the `send_to` value.
 
-- Do not change nameservers, turn off the proxy, or create a new Cloudflare account.
-- Do not add a Cache Rule, Page Rule, WAF rule or redirect that touches the measurement path.
-- Do not put a Cloudflare Access policy on that path.
+If checkout is Stripe Checkout, the success URL must return to a page on `badgemyauto.com`
+(e.g. `/order-complete?session_id={CHECKOUT_SESSION_ID}`) and that page must load the order
+total and email before firing the event.
+
+## Verify
+
+- Chrome → Tag Assistant → place a test order → the conversion tag shows `value` and
+  `transaction_id`.
+- Google Ads → Goals → Conversions → the Purchase action → **Enhanced conversions** shows
+  "Recording" within 48 h.
+- Campaign Conv. value stops reading `1.00 × conversions`.
+
+## If you later move off Lovable
+
+On any host where your own Cloudflare zone can proxy the site, enable the gateway from
+Cloudflare: Websites → domain → **Google tag gateway** → toggle "Turn on and configure Google
+tag gateway" → Google tag ID `GT-NS4JDHV7` → Measurement path e.g. `/metrics` → Save. Needs
+Super Administrator / Administrator / Zaraz Admin on the Cloudflare account.
