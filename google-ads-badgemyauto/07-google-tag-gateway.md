@@ -41,7 +41,7 @@ Add Google Ads conversion tracking to this site.
 2. On the order-confirmation / checkout-success page, after the order is confirmed, fire:
    gtag('set', 'user_data', { email: ORDER_EMAIL, phone_number: ORDER_PHONE_E164 });
    gtag('event', 'conversion', {
-     send_to: 'AW-18362720235/<CONVERSION_LABEL>',
+     send_to: 'AW-18362720235/Rl3qCLTwsuwcEOu_g7RE',
      value: ORDER_TOTAL_NUMBER,
      currency: 'USD',
      transaction_id: ORDER_ID
@@ -53,8 +53,9 @@ Add Google Ads conversion tracking to this site.
 3. Do not fire the conversion event on add-to-cart, preview, or checkout start.
 ```
 
-`<CONVERSION_LABEL>` comes from Google Ads → Goals → Conversions → the Purchase action →
-Tag setup → "Use Google tag" → the `send_to` value.
+The label `Rl3qCLTwsuwcEOu_g7RE` is the Purchase action's conversion label (from Google Ads →
+Goals → Conversions → Purchase → Tag setup). Do not paste Google's default event snippet as-is:
+it hardcodes `value: 1.0` and an empty `transaction_id`, which is what produced the $1.00 conversions.
 
 If checkout is Stripe Checkout, the success URL must return to a page on `badgemyauto.com`
 (e.g. `/order-complete?session_id={CHECKOUT_SESSION_ID}`) and that page must load the order
